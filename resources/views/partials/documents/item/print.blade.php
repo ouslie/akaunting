@@ -13,10 +13,10 @@
     @stack('quantity_td_end')
 
     @stack('price_td_start')
-        <td class="price">@money($item->price, $document->currency_code, true)</td>
+        <td class="price">@money($item->price -0, $document->currency_code, true)</td>
     @stack('price_td_end')
 
     @stack('total_td_start')
-        <td class="total">@money($item->total, $document->currency_code, true)</td>
+        <td class="total">@money($item->total -0, $document->currency_code, true)</td>
     @stack('total_td_end')
 </tr>
