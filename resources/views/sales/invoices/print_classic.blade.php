@@ -161,11 +161,11 @@
                                 @stack('quantity_td_end')
 
                                 @stack('price_td_start')
-                                    <td class="price">@money($invoice_item->price, $invoice->currency_code, true)</td>
+                                    <td class="price">@money($invoice_item->price - 0 , $invoice->currency_code, true)</td>
                                 @stack('price_td_end')
 
                                 @stack('total_td_start')
-                                    <td class="total">@money($invoice_item->total, $invoice->currency_code, true)</td>
+                                    <td class="total">@money($invoice_item->total - 0, $invoice->currency_code, true)</td>
                                 @stack('total_td_end')
                             </tr>
                         @endforeach
@@ -194,14 +194,14 @@
                         @stack($total->code . '_td_start')
                             <div class="border-top-dashed py-2">
                                 <strong class="float-left">{{ trans($total->title) }}:</strong>
-                                <span>@money($total->amount, $invoice->currency_code, true)</span>
+                                <span>@money($total->amount - 0, $invoice->currency_code, true)</span>
                             </div>
                         @stack($total->code . '_td_end')
                     @else
                         @if ($invoice->paid)
                             <div class="border-top-dashed py-2">
                                 <strong class="float-left">{{ trans('invoices.paid') }}:</strong>
-                                <span>- @money($invoice->paid, $invoice->currency_code, true)</span>
+                                <span>- @money($invoice->paid -0, $invoice->currency_code, true)</span>
                             </div>
                         @endif
                         @stack('grand_total_td_start')
