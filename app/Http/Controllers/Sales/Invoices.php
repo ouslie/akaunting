@@ -45,7 +45,7 @@ class Invoices extends Controller
         $categories = Category::income()->enabled()->orderBy('name')->pluck('name', 'id');
 
         $statuses = $this->getInvoiceStatuses();
-        dd($invoices);
+
         return view('sales.invoices.index', compact('invoices', 'customers', 'categories', 'statuses'));
     }
 
