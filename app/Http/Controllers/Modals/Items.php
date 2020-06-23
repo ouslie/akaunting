@@ -3,13 +3,11 @@
 namespace App\Http\Controllers\Modals;
 
 use App\Abstracts\Http\Controller;
-use Illuminate\Http\Request as Request;
-
 use App\Jobs\Common\CreateItem;
-
 use App\Models\Setting\Category;
 use App\Models\Setting\Currency;
 use App\Models\Setting\Tax;
+use Illuminate\Http\Request as IRequest;
 
 class Items extends Controller
 {
@@ -19,9 +17,9 @@ class Items extends Controller
     public function __construct()
     {
         // Add CRUD permission check
-        $this->middleware('permission:create-common-items')->only(['create', 'store', 'duplicate', 'import']);
-        $this->middleware('permission:read-common-items')->only(['index', 'show', 'edit', 'export']);
-        $this->middleware('permission:update-common-items')->only(['update', 'enable', 'disable']);
+        $this->middleware('permission:create-common-items')->only('create', 'store', 'duplicate', 'import');
+        $this->middleware('permission:read-common-items')->only('index', 'show', 'edit', 'export');
+        $this->middleware('permission:update-common-items')->only('update', 'enable', 'disable');
         $this->middleware('permission:delete-common-items')->only('destroy');
     }
 
@@ -30,9 +28,9 @@ class Items extends Controller
      *
      * @return Response
      */
-    public function create(Request $request)
+    public function create(IRequest $request)
     {
-        $categories = Category::type('item')->enabled()->orderBy('name')->pluck('name', 'id');
+        $categories = Category::item()->enabled()->orderBy('name')->pluck('name', 'id');
 
         $taxes = Tax::enabled()->orderBy('name')->get()->pluck('title', 'id');
 
@@ -54,7 +52,7 @@ class Items extends Controller
      * @param  $request
      * @return Response
      */
-    public function store(Request $request)
+    public function store(IRequest $request)
     {
         if ($request->get('type', false) == 'inline') {
             $data = [
@@ -62,7 +60,7 @@ class Items extends Controller
                 'name' => '',
                 'sale_price' => 0,
                 'purchase_price' => 0,
-                'enabled' => 1
+                'enabled' => 1,
             ];
 
             $data[$request->get('field')] = $request->get('value');
@@ -71,6 +69,10 @@ class Items extends Controller
         }
 
         $response = $this->ajaxDispatch(new CreateItem($request));
+
+        if ($response['success']) {
+            $response['message'] = trans('messages.success.added', ['type' => trans_choice('general.items', 1)]);
+        }
 
         return response()->json($response);
     }

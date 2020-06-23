@@ -28,7 +28,7 @@ class Vendors extends Controller
      */
     public function index()
     {
-        $vendors = Contact::type($this->getVendorTypes())->collect();
+        $vendors = Contact::with('bills.transactions')->vendor()->collect();
 
         return view('purchases.vendors.index', compact('vendors'));
     }
@@ -51,7 +51,7 @@ class Vendors extends Controller
         $counts = [];
 
         // Handle bills
-        $bills = Bill::where('contact_id', $vendor->id)->get();
+        $bills = Bill::with('transactions')->where('contact_id', $vendor->id)->get();
 
         $counts['bills'] = $bills->count();
 
@@ -78,9 +78,14 @@ class Vendors extends Controller
         }
 
         // Handle payments
-        $transactions = Transaction::where('contact_id', $vendor->id)->type('expense')->get();
+        $transactions = Transaction::with('category')->where('contact_id', $vendor->id)->expense()->get();
 
         $counts['transactions'] = $transactions->count();
+
+        // Prepare data
+        $transactions->each(function ($item) use (&$amounts) {
+            $amounts['paid'] += $item->getAmountConvertedToDefault();
+        });
 
         $limit = request('limit', setting('default.list_limit', '25'));
         $transactions = $this->paginate($transactions->sortByDesc('paid_at'), $limit);
@@ -277,7 +282,7 @@ class Vendors extends Controller
      */
     public function export()
     {
-        return \Excel::download(new Export(), trans_choice('general.vendors', 2) . '.xlsx');
+        return \Excel::download(new Export(), \Str::filename(trans_choice('general.vendors', 2)) . '.xlsx');
     }
 
     public function currency(Contact $vendor)

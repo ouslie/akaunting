@@ -25,16 +25,20 @@ class Reports extends Controller
         $reports = Report::orderBy('name')->get();
 
         foreach ($reports as $report) {
-            if (!Utility::canRead($report->class)) {
+            if (!Utility::canShow($report->class)) {
                 continue;
             }
 
             $class = Utility::getClassInstance($report, false);
 
+            if (empty($class)) {
+                continue;
+            }
+
             $ttl = 3600 * 6; // 6 hours
 
             $totals[$report->id] = Cache::remember('reports.totals.' . $report->id, $ttl, function () use ($class) {
-                return $class->getTotal();
+                return $class->getGrandTotal();
             });
 
             $icons[$report->id] = $class->getIcon();
@@ -52,14 +56,14 @@ class Reports extends Controller
      */
     public function show(Report $report)
     {
-        if (!Utility::canRead($report->class)) {
+        if (!Utility::canShow($report->class)) {
             abort(403);
         }
 
         $class = Utility::getClassInstance($report);
 
         // Update cache
-        Cache::put('reports.totals.' . $report->id, $class->getTotal());
+        Cache::put('reports.totals.' . $report->id, $class->getGrandTotal());
 
         return $class->show();
     }
@@ -199,7 +203,7 @@ class Reports extends Controller
      */
     public function print(Report $report)
     {
-        if (!Utility::canRead($report->class)) {
+        if (!Utility::canShow($report->class)) {
             abort(403);
         }
 
@@ -214,7 +218,7 @@ class Reports extends Controller
      */
     public function export(Report $report)
     {
-        if (!Utility::canRead($report->class)) {
+        if (!Utility::canShow($report->class)) {
             abort(403);
         }
 
@@ -259,11 +263,11 @@ class Reports extends Controller
     public function clear()
     {
         Report::all()->each(function ($report) {
-            if (!Utility::canRead($report->class)) {
+            if (!Utility::canShow($report->class)) {
                 return;
             }
 
-            Cache::put('reports.totals.' . $report->id, Utility::getClassInstance($report)->getTotal());
+            Cache::put('reports.totals.' . $report->id, Utility::getClassInstance($report)->getGrandTotal());
         });
 
         return redirect()->back();

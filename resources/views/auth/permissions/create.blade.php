@@ -26,8 +26,8 @@
             </div>
 
             <div class="card-footer">
-                <div class="row float-right">
-                    {{ Form::saveButtons('auth/permissions') }}
+                <div class="row save-buttons">
+                    {{ Form::saveButtons('permissions.index') }}
                 </div>
             </div>
         {!! Form::close() !!}

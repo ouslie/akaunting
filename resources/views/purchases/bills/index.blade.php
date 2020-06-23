@@ -5,7 +5,7 @@
 @section('new_button')
     @permission('create-purchases-bills')
         <span><a href="{{ route('bills.create') }}" class="btn btn-success btn-sm header-button-top"><span class="fa fa-plus"></span> &nbsp;{{ trans('general.add_new') }}</a></span>
-        <span><a href="{{ url('common/import/purchases/bills') }}" class="btn btn-white btn-sm header-button-top"><span class="fa fa-upload"></span> &nbsp;{{ trans('import.import') }}</a></span>
+        <span><a href="{{ route('import.create', ['group' => 'purchases', 'type' => 'bills']) }}" class="btn btn-white btn-sm header-button-top"><span class="fa fa-upload"></span> &nbsp;{{ trans('import.import') }}</a></span>
     @endpermission
     <span><a href="{{ route('bills.export', request()->input()) }}" class="btn btn-white btn-sm header-button-bottom"><span class="fa fa-download"></span> &nbsp;{{ trans('general.export') }}</a></span>
 @endsection
@@ -13,21 +13,21 @@
 @section('content')
     @if ($bills->count())
         <div class="card">
-            <div class="card-header border-bottom-0" v-bind:class="[bulk_action.show ? 'bg-gradient-primary' : '']">
+            <div class="card-header border-bottom-0" :class="[{'bg-gradient-primary': bulk_action.show}]">
                 {!! Form::open([
-                    'url' => 'purchases/bills',
-                    'role' => 'form',
                     'method' => 'GET',
+                    'route' => 'bills.index',
+                    'role' => 'form',
                     'class' => 'mb-0'
                 ]) !!}
-                    <div class="row" v-if="!bulk_action.show">
-                        <div class="col-12 d-flex align-items-center">
-                            <span class="font-weight-400 d-none d-lg-block mr-2">{{ trans('general.search') }}:</span>
-                            <akaunting-search></akaunting-search>
-                        </div>
+                    <div class="align-items-center" v-if="!bulk_action.show">
+                        <akaunting-search
+                            :placeholder="'{{ trans('general.search_placeholder') }}'"
+                            :options="{{ json_encode([]) }}"
+                        ></akaunting-search>
                     </div>
 
-                    {{ Form::bulkActionRowGroup('general.bills', $bulk_actions, 'purchases/bills') }}
+                    {{ Form::bulkActionRowGroup('general.bills', $bulk_actions, ['group' => 'purchases', 'type' => 'bills']) }}
                 {!! Form::close() !!}
             </div>
 
@@ -70,13 +70,21 @@
                                                 <a class="dropdown-item" href="{{ route('bills.edit', $item->id) }}">{{ trans('general.edit') }}</a>
                                             @endif
                                             <div class="dropdown-divider"></div>
-                                            @permission('create-purchases-bills')
-                                                <a class="dropdown-item" href="{{ route('bills.duplicate', $item->id) }}">{{ trans('general.duplicate') }}</a>
-                                            @endpermission
+
+                                            @if ($item->status != 'cancelled')
+                                                @permission('create-purchases-bills')
+                                                    <a class="dropdown-item" href="{{ route('bills.duplicate', $item->id) }}">{{ trans('general.duplicate') }}</a>
+                                                @endpermission
+
+                                                @permission('update-purchases-bills')
+                                                    <a class="dropdown-item" href="{{ route('bills.cancelled', $item->id) }}">{{ trans('general.cancel') }}</a>
+                                                @endpermission
+                                            @endif
+
                                             @permission('delete-purchases-bills')
                                                 <div class="dropdown-divider"></div>
                                                 @if (!$item->reconciled)
-                                                    {!! Form::deleteLink($item, 'purchases/bills') !!}
+                                                    {!! Form::deleteLink($item, 'bills.destroy') !!}
                                                 @endif
                                             @endpermission
                                         </div>

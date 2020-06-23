@@ -9,13 +9,13 @@ class Bills extends Export
 {
     public function collection()
     {
-        $model = Model::with(['category'])->usingSearchString(request('search'));
+        $model = Model::with('category')->usingSearchString(request('search'));
 
         if (!empty($this->ids)) {
             $model->whereIn('id', (array) $this->ids);
         }
 
-        return $model->get();
+        return $model->cursor();
     }
 
     public function map($model): array

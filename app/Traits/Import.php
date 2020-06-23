@@ -28,7 +28,7 @@ trait Import
             $id = $this->getAccountIdFromCurrency($row);
         }
 
-        return $id;
+        return (int) $id;
     }
 
     public function getCategoryId($row, $type = null)
@@ -41,7 +41,7 @@ trait Import
             $id = $this->getCategoryIdFromName($row, $type);
         }
 
-        return $id;
+        return (int) $id;
     }
 
     public function getContactId($row, $type = null)
@@ -58,7 +58,7 @@ trait Import
             $id = $this->getContactIdFromName($row, $type);
         }
 
-        return $id;
+        return (int) $id;
     }
 
     public function getDocumentId($row)
@@ -81,7 +81,7 @@ trait Import
             }
         }
 
-        return $id;
+        return (int) $id;
     }
 
     public function getItemId($row)
@@ -92,7 +92,7 @@ trait Import
             $id = $this->getItemIdFromName($row);
         }
 
-        return $id;
+        return (int) $id;
     }
 
     public function getTaxId($row)
@@ -107,7 +107,7 @@ trait Import
             $id = $this->getTaxIdFromRate($row);
         }
 
-        return $id;
+        return (int) $id;
     }
 
     public function getAccountIdFromCurrency($row)
@@ -117,7 +117,7 @@ trait Import
         ], [
             'company_id'        => session('company_id'),
             'name'              => !empty($row['account_name']) ? $row['account_name'] : $row['currency_code'],
-            'number'            => !empty($row['account_number']) ? $row['account_number'] : Account::max('number') + 1,
+            'number'            => !empty($row['account_number']) ? $row['account_number'] : rand(1, 10000),
             'opening_balance'   => !empty($row['opening_balance']) ? $row['opening_balance'] : 0,
             'enabled'           => 1,
         ])->id;
@@ -129,7 +129,7 @@ trait Import
             'name'              => $row['account_name'],
         ], [
             'company_id'        => session('company_id'),
-            'number'            => !empty($row['account_number']) ? $row['account_number'] : Account::max('number') + 1,
+            'number'            => !empty($row['account_number']) ? $row['account_number'] : rand(1, 10000),
             'currency_code'     => !empty($row['currency_code']) ? $row['currency_code'] : setting('default.currency'),
             'opening_balance'   => !empty($row['opening_balance']) ? $row['opening_balance'] : 0,
             'enabled'           => 1,

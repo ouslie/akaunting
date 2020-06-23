@@ -9,13 +9,13 @@ class Payments extends Export
 {
     public function collection()
     {
-        $model = Model::with(['account', 'bill', 'category', 'contact'])->type('expense')->usingSearchString(request('search'));
+        $model = Model::with('account', 'bill', 'category', 'contact')->expense()->usingSearchString(request('search'));
 
         if (!empty($this->ids)) {
             $model->whereIn('id', (array) $this->ids);
         }
 
-        return $model->get();
+        return $model->cursor();
     }
 
     public function map($model): array

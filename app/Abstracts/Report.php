@@ -2,11 +2,11 @@
 
 namespace App\Abstracts;
 
-use App\Events\Common\ReportFilterShowing;
-use App\Events\Common\ReportFilterApplying;
-use App\Events\Common\ReportGroupApplying;
-use App\Events\Common\ReportGroupShowing;
-use App\Events\Common\ReportRowsShowing;
+use App\Events\Report\FilterApplying;
+use App\Events\Report\FilterShowing;
+use App\Events\Report\GroupApplying;
+use App\Events\Report\GroupShowing;
+use App\Events\Report\RowsShowing;
 use App\Exports\Common\Reports as Export;
 use App\Models\Banking\Transaction;
 use App\Models\Common\Report as Model;
@@ -47,11 +47,6 @@ abstract class Report
 
     public $loaded = false;
 
-    public $indents = [
-        'table_header' => '0px',
-        'table_rows' => '24px',
-    ];
-
     public $chart = [
         'line' => [
             'width' => '0',
@@ -66,6 +61,9 @@ abstract class Report
         'dates' => [],
         'datasets' => [],
     ];
+
+    public $column_name_width = 'report-column-name';
+    public $column_value_width = 'report-column-value';
 
     public function __construct(Model $model = null, $load_data = true)
     {
@@ -84,7 +82,7 @@ abstract class Report
         $this->load();
     }
 
-    abstract public function getTotals();
+    abstract public function setData();
 
     public function load()
     {
@@ -94,7 +92,8 @@ abstract class Report
         $this->setDates();
         $this->setFilters();
         $this->setRows();
-        $this->getTotals();
+        $this->setData();
+        $this->setColumnWidth();
 
         $this->loaded = true;
     }
@@ -118,19 +117,23 @@ abstract class Report
         return $this->icon;
     }
 
-    public function getTotal()
+    public function getGrandTotal()
     {
         if (!$this->loaded) {
             $this->load();
         }
 
-        $sum = 0;
+        if (!empty($this->footer_totals)) {
+            $sum = 0;
 
-        foreach ($this->footer_totals as $total) {
-            $sum += is_array($total) ? array_sum($total) : $total;
+            foreach ($this->footer_totals as $total) {
+                $sum += is_array($total) ? array_sum($total) : $total;
+            }
+
+            $total = money($sum, setting('default.currency'), true);
+        } else {
+            $total = trans('general.na');
         }
-
-        $total = money($sum, setting('default.currency'), true);
 
         return $total;
     }
@@ -139,17 +142,17 @@ abstract class Report
     {
         $chart = new Chartjs();
 
-        if (empty($this->model->settings->chart)) {
+        if (!$type = $this->getSetting('chart')) {
             return $chart;
         }
 
-        $config = $this->chart[$this->model->settings->chart];
+        $config = $this->chart[$type];
 
         $default_options = $this->getLineChartOptions();
 
         $options = array_merge($default_options, (array) $config['options']);
 
-        $chart->type($this->model->settings->chart)
+        $chart->type($type)
             ->width((int) $config['width'])
             ->height((int) $config['height'])
             ->options($options)
@@ -191,7 +194,31 @@ abstract class Report
 
     public function export()
     {
-        return \Excel::download(new Export($this->views['content'], $this), $this->model->name . '.xlsx');
+        return \Excel::download(new Export($this->views['content'], $this), \Str::filename($this->model->name) . '.xlsx');
+    }
+
+    public function setColumnWidth()
+    {
+        if (!$period = $this->getSetting('period')) {
+            return;
+        }
+
+        $width = '';
+
+        switch ($period) {
+            case 'quarterly':
+                $width = 'col-sm-2';
+                break;
+            case 'yearly':
+                $width = 'col-sm-4';
+                break;
+        }
+
+        if (empty($width)) {
+            return;
+        }
+
+        $this->column_name_width = $this->column_value_width = $width;
     }
 
     public function setYear()
@@ -226,16 +253,16 @@ abstract class Report
 
     public function setDates()
     {
-        if (empty($this->model->settings->period)) {
+        if (!$period = $this->getSetting('period')) {
             return;
         }
 
-        $function = 'sub' . ucfirst(str_replace('ly', '', $this->model->settings->period));
+        $function = 'sub' . ucfirst(str_replace('ly', '', $period));
 
         $start = $this->getFinancialStart()->copy()->$function();
 
         for ($j = 1; $j <= 12; $j++) {
-            switch ($this->model->settings->period) {
+            switch ($period) {
                 case 'yearly':
                     $start->addYear();
 
@@ -282,22 +309,22 @@ abstract class Report
 
     public function setFilters()
     {
-        event(new ReportFilterShowing($this));
+        event(new FilterShowing($this));
     }
 
     public function setGroups()
     {
         $this->groups = [];
 
-        event(new ReportGroupShowing($this));
+        event(new GroupShowing($this));
     }
 
     public function setRows()
     {
-        event(new ReportRowsShowing($this));
+        event(new RowsShowing($this));
     }
 
-    public function setTotals($items, $date_field, $check_type = false, $table = 'default')
+    public function setTotals($items, $date_field, $check_type = false, $table = 'default', $with_tax = true)
     {
         foreach ($items as $item) {
             // Make groups extensible
@@ -305,17 +332,17 @@ abstract class Report
 
             $date = $this->getFormattedDate(Date::parse($item->$date_field));
 
-            $id_field = $this->model->settings->group . '_id';
+            $id_field = $this->getSetting('group') . '_id';
 
             if (
                 !isset($this->row_values[$table][$item->$id_field])
                 || !isset($this->row_values[$table][$item->$id_field][$date])
-                || !isset($this->footer_totals[$table][$date]))
-            {
+                || !isset($this->footer_totals[$table][$date])
+            ) {
                 continue;
             }
 
-            $amount = $item->getAmountConvertedToDefault();
+            $amount = $item->getAmountConvertedToDefault(false, $with_tax);
 
             $type = (($item instanceof Invoice) || (($item instanceof Transaction) && ($item->type == 'income'))) ? 'income' : 'expense';
 
@@ -333,21 +360,21 @@ abstract class Report
 
     public function applyFilters($model, $args = [])
     {
-        event(new ReportFilterApplying($this, $model, $args));
+        event(new FilterApplying($this, $model, $args));
 
         return $model;
     }
 
     public function applyGroups($model, $args = [])
     {
-        event(new ReportGroupApplying($this, $model, $args));
+        event(new GroupApplying($this, $model, $args));
 
         return $model;
     }
 
     public function getFormattedDate($date)
     {
-        switch ($this->model->settings->period) {
+        switch ($this->getSetting('period')) {
             case 'yearly':
                 $i = $date->copy()->format($this->getYearlyDateFormat());
                 break;
@@ -369,19 +396,24 @@ abstract class Report
     {
         $print_url = 'common/reports/' . $this->model->id . '/' . $action . '?year='. $this->year;
 
-        collect(request('accounts'))->each(function($item) use(&$print_url) {
+        collect(request('accounts'))->each(function($item) use (&$print_url) {
             $print_url .= '&accounts[]=' . $item;
         });
 
-        collect(request('customers'))->each(function($item) use(&$print_url) {
+        collect(request('customers'))->each(function($item) use (&$print_url) {
             $print_url .= '&customers[]=' . $item;
         });
 
-        collect(request('categories'))->each(function($item) use(&$print_url) {
+        collect(request('categories'))->each(function($item) use (&$print_url) {
             $print_url .= '&categories[]=' . $item;
         });
 
         return $print_url;
+    }
+
+    public function getSetting($name, $default = '')
+    {
+        return $this->model->settings->$name ?? $default;
     }
 
     public function getFields()

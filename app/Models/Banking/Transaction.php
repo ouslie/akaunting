@@ -4,12 +4,12 @@ namespace App\Models\Banking;
 
 use App\Abstracts\Model;
 use App\Models\Setting\Category;
+use App\Models\Setting\Currency;
 use App\Traits\Currencies;
 use App\Traits\DateTime;
 use App\Traits\Media;
 use App\Traits\Recurring;
 use Bkwld\Cloner\Cloneable;
-use Date;
 
 class Transaction extends Model
 {
@@ -75,11 +75,6 @@ class Transaction extends Model
         return $this->morphOne('App\Models\Common\Recurring', 'recurable');
     }
 
-    public function transfers()
-    {
-        return $this->hasMany('App\Models\Banking\Transfer');
-    }
-
     public function user()
     {
         return $this->belongsTo('App\Models\Auth\User', 'contact_id', 'id');
@@ -98,7 +93,29 @@ class Transaction extends Model
             return $query;
         }
 
-        return $query->whereIn('type', (array) $types);
+        return $query->whereIn($this->table . '.type', (array) $types);
+    }
+
+    /**
+     * Scope to include only income.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeIncome($query)
+    {
+        return $query->where($this->table . '.type', '=', 'income');
+    }
+
+    /**
+     * Scope to include only expense.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeExpense($query)
+    {
+        return $query->where($this->table . '.type', '=', 'expense');
     }
 
     /**
@@ -180,6 +197,33 @@ class Transaction extends Model
     }
 
     /**
+     * Get only reconciled.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeIsReconciled($query)
+    {
+        return $query->where('reconciled', 1);
+    }
+
+    /**
+     * Get only not reconciled.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeIsNotReconciled($query)
+    {
+        return $query->where('reconciled', 0);
+    }
+
+    public function onCloning($src, $child = null)
+    {
+        $this->document_id = null;
+    }
+
+    /**
      * Convert amount to double.
      *
      * @param  string  $value
@@ -202,6 +246,51 @@ class Transaction extends Model
     }
 
     /**
+     * Convert amount to double.
+     *
+     * @return float
+     */
+    public function getPriceAttribute()
+    {
+        static $currencies;
+
+        $amount = $this->amount;
+
+        // Convert amount if not same currency
+        if ($this->account->currency_code != $this->currency_code) {
+            if (empty($currencies)) {
+                $currencies = Currency::enabled()->pluck('rate', 'code')->toArray();
+            }
+
+            $default_currency = setting('default.currency', 'USD');
+
+            $default_amount = $this->amount;
+
+            if ($default_currency != $this->currency_code) {
+                $default_amount_model = new Transaction();
+
+                $default_amount_model->default_currency_code = $default_currency;
+                $default_amount_model->amount = $this->amount;
+                $default_amount_model->currency_code = $this->currency_code;
+                $default_amount_model->currency_rate = $this->currency_rate;
+
+                $default_amount = $default_amount_model->getAmountConvertedToDefault();
+            }
+
+            $transfer_amount = new Transaction();
+
+            $transfer_amount->default_currency_code = $this->currency_code;
+            $transfer_amount->amount = $default_amount;
+            $transfer_amount->currency_code = $this->account->currency_code;
+            $transfer_amount->currency_rate = $currencies[$this->account->currency_code];
+
+            $amount = $transfer_amount->getAmountConvertedFromDefault();
+        }
+
+        return $amount;
+    }
+
+    /**
      * Get the current balance.
      *
      * @return string
@@ -215,10 +304,5 @@ class Transaction extends Model
         }
 
         return $this->getMedia('attachment')->last();
-    }
-
-    public function getDivideConvertedAmount($format = false)
-    {
-        return $this->divide($this->amount, $this->currency_code, $this->currency_rate, $format);
     }
 }

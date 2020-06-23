@@ -12,8 +12,9 @@ class Info
     {
         return array_merge(static::versions(), [
             'api_key' => setting('apps.api_key'),
-            'companies' => Company::all()->count(),
-            'users' => User::all()->count(),
+            'companies' => Company::count(),
+            'users' => User::count(),
+            'php_extensions' => static::phpExtensions(),
         ]);
     }
 
@@ -30,11 +31,22 @@ class Info
     {
         return phpversion();
     }
-  
+
+    public static function phpExtensions()
+    {
+        return get_loaded_extensions();
+    }
+
     public static function mysqlVersion()
     {
-        if (env('DB_CONNECTION') === 'mysql') {
-            return DB::selectOne('select version() as mversion')->mversion;
+        static $version;
+
+        if (empty($version) && (config('database.default') === 'mysql')) {
+            $version = DB::selectOne('select version() as mversion')->mversion;
+        }
+
+        if (isset($version)) {
+            return $version;
         }
 
         return 'N/A';

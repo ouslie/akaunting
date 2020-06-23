@@ -236,7 +236,7 @@
                             <div class="table-responsive">
                                 <table class="table">
                                     <tbody>
-                                        @foreach ($invoice->totals as $total)
+                                        @foreach ($invoice->totals_sorted as $total)
                                             @if ($total->code != 'total')
                                                 @stack($total->code . '_td_start')
                                                     <tr>
@@ -246,8 +246,10 @@
                                                 @stack($total->code . '_td_end')
                                             @else
                                                 @if ($invoice->paid)
-                                                    <tr class="text-success">
-                                                        <th>{{ trans('invoices.paid') }}:</th>
+                                                    <tr>
+                                                        <th class="text-success">
+                                                            {{ trans('invoices.paid') }}:
+                                                        </th>
                                                         <td class="text-right">- @money($invoice->paid, $invoice->currency_code, true)</td>
                                                     </tr>
                                                 @endif
@@ -271,8 +273,7 @@
                 <div class="card-footer">
                     <div class="row">
                         <div class="col-xs-12 col-sm-6">
-                            @if($invoice->status != 'paid')
-                                @if ($payment_methods)
+                            @if (!empty($payment_methods) && !in_array($invoice->status, ['paid', 'cancelled']))
                                 {!! Form::open([
                                     'id' => 'invoice-payment',
                                     'role' => 'form',
@@ -283,7 +284,6 @@
                                     {{ Form::selectGroup('payment_method', '', 'money el-icon-money', $payment_methods, '', ['change' => 'onChangePaymentMethod', 'id' => 'payment-method', 'class' => 'form-control', 'placeholder' => trans('general.form.select.field', ['field' => trans_choice('general.payment_methods', 1)])], 'col-sm-12') }}
                                     {!! Form::hidden('invoice_id', $invoice->id, ['v-model' => 'form.invoice_id']) !!}
                                 {!! Form::close() !!}
-                                @endif
                             @endif
                         </div>
                         <div class="col-xs-12 col-sm-6 text-right">

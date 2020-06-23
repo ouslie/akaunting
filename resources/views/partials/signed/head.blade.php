@@ -30,7 +30,7 @@
 
     <script type="text/javascript"><!--
         var url = '{{ url("/") }}';
-        var app_url = '{{ env("APP_URL") }}';
+        var app_url = '{{ config("app.url") }}';
     //--></script>
 
     @stack('js')
@@ -39,8 +39,6 @@
         window.Laravel = <?php echo json_encode([
             'csrfToken' => csrf_token(),
         ]); ?>;
-
-        var aka_currency = {!! !empty($currency) ? $currency : 'false' !!};
 
         var flash_notification = {!! (session()->has('flash_notification')) ? json_encode(session()->get('flash_notification')) : 'false' !!};
     //--></script>

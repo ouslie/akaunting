@@ -10,21 +10,21 @@
 
 @section('content')
     <div class="card">
-        <div class="card-header border-bottom-0" v-bind:class="[bulk_action.show ? 'bg-gradient-primary' : '']">
+        <div class="card-header border-bottom-0" :class="[{'bg-gradient-primary': bulk_action.show}]">
             {!! Form::open([
-                'url' => 'auth/users',
-                'role' => 'form',
                 'method' => 'GET',
+                'route' => 'users.index',
+                'role' => 'form',
                 'class' => 'mb-0'
             ]) !!}
-                <div class="row" v-if="!bulk_action.show">
-                    <div class="col-12 d-flex align-items-center">
-                        <span class="font-weight-400 d-none d-lg-block mr-2">{{ trans('general.search') }}:</span>
-                        <akaunting-search></akaunting-search>
-                     </div>
+                <div class="align-items-center" v-if="!bulk_action.show">
+                    <akaunting-search
+                        :placeholder="'{{ trans('general.search_placeholder') }}'"
+                        :options="{{ json_encode([]) }}"
+                    ></akaunting-search>
                 </div>
 
-                {{ Form::bulkActionRowGroup('general.users', $bulk_actions, 'auth/users') }}
+                {{ Form::bulkActionRowGroup('general.users', $bulk_actions, ['group' => 'auth', 'type' => 'users']) }}
             {!! Form::close() !!}
         </div>
 
@@ -44,15 +44,21 @@
                 <tbody>
                     @foreach($users as $item)
                         <tr class="row align-items-center border-top-1">
-                            <td class="col-sm-2 col-md-2 col-lg-1 d-none d-sm-block">{{ Form::bulkActionGroup($item->id, $item->name) }}</td>
+                            <td class="col-sm-2 col-md-2 col-lg-1 d-none d-sm-block">
+                                @if (user()->id != $item->id)
+                                    {{ Form::bulkActionGroup($item->id, $item->name) }}
+                                @else
+                                    {{ Form::bulkActionGroup($item->id, $item->name, ['disabled' => 'true']) }}
+                                @endif
+                            </td>
                             <td class="col-xs-4 col-sm-3 col-md-2 col-lg-3">
                                 <a class="col-aka" href="{{ route('users.edit', $item->id) }}">
                                     @if (setting('default.use_gravatar', '0') == '1')
-                                        <img src="{{ $item->picture }}" alt="{{ $item->name }}" title="{{ $item->name }}">
+                                        <img src="{{ $item->picture }}" alt="{{ $item->name }}" class="rounded-circle user-img p-1 mr-3 hidden-md" title="{{ $item->name }}">
+                                    @elseif (is_object($item->picture))
+                                        <img src="{{ Storage::url($item->picture->id) }}" class="rounded-circle user-img p-1 mr-3 hidden-md" alt="{{ $item->name }}" title="{{ $item->name }}">
                                     @else
-                                        @if ($item->picture)
-                                            <img src="{{ Storage::url($item->picture->id) }}" alt="{{ $item->name }}" title="{{ $item->name }}">
-                                        @endif
+                                        <img src="{{ asset('public/img/user.svg') }}" class="user-img p-1 mr-3 hidden-md" alt="{{ $item->name }}"/>
                                     @endif
                                     {{ $item->name }}
                                 </a>
@@ -64,13 +70,13 @@
                                 @endforeach
                             </td>
                             <td class="col-xs-4 col-sm-3 col-md-2 col-lg-2">
-                                @if (user()->can('update-auth-users'))
+                                @if ((user()->id != $item->id) && user()->can('update-auth-users'))
                                     {{ Form::enabledGroup($item->id, $item->name, $item->enabled) }}
                                 @else
                                     @if ($item->enabled)
-                                        <badge rounded type="success">{{ trans('general.enabled') }}</badge>
+                                        <badge rounded type="success" class="mw-60">{{ trans('general.yes') }}</badge>
                                     @else
-                                        <badge rounded type="danger">{{ trans('general.disabled') }}</badge>
+                                        <badge rounded type="danger" class="mw-60">{{ trans('general.no') }}</badge>
                                     @endif
                                 @endif
                             </td>
@@ -81,10 +87,12 @@
                                     </a>
                                     <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
                                         <a class="dropdown-item" href="{{ route('users.edit', $item->id) }}">{{ trans('general.edit') }}</a>
-                                        @permission('delete-auth-users')
-                                            <div class="dropdown-divider"></div>
-                                            {!! Form::deleteLink($item, 'auth/users') !!}
-                                        @endpermission
+                                        @if (user()->id != $item->id)
+                                            @permission('delete-auth-users')
+                                                <div class="dropdown-divider"></div>
+                                                {!! Form::deleteLink($item, 'users.destroy') !!}
+                                            @endpermission
+                                        @endif
                                     </div>
                                 </div>
                             </td>

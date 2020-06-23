@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Modals;
 
 use App\Abstracts\Http\Controller;
 use App\Http\Requests\Setting\Tax as Request;
-use App\Models\Setting\Tax;
+use App\Jobs\Setting\CreateTax;
 
 class Taxes extends Controller
 {
@@ -14,9 +14,9 @@ class Taxes extends Controller
     public function __construct()
     {
         // Add CRUD permission check
-        $this->middleware('permission:create-settings-taxes')->only(['create', 'store']);
-        $this->middleware('permission:read-settings-taxes')->only(['index', 'edit']);
-        $this->middleware('permission:update-settings-taxes')->only(['update', 'enable', 'disable']);
+        $this->middleware('permission:create-settings-taxes')->only('create', 'store');
+        $this->middleware('permission:read-settings-taxes')->only('index', 'edit');
+        $this->middleware('permission:update-settings-taxes')->only('update', 'enable', 'disable');
         $this->middleware('permission:delete-settings-taxes')->only('destroy');
     }
 
@@ -62,16 +62,12 @@ class Taxes extends Controller
     {
         $request['enabled'] = 1;
 
-        $tax = Tax::create($request->all());
+        $response = $this->ajaxDispatch(new CreateTax($request));
 
-        $message = trans('messages.success.added', ['type' => trans_choice('general.taxes', 1)]);
+        if ($response['success']) {
+            $response['message'] = trans('messages.success.added', ['type' => trans_choice('general.taxes', 1)]);
+        }
 
-        return response()->json([
-            'success' => true,
-            'error' => false,
-            'data' => $tax,
-            'message' => $message,
-            'html' => 'null',
-        ]);
+        return response()->json($response);
     }
 }

@@ -13,21 +13,21 @@
 @section('content')
     @if ($items->count())
         <div class="card">
-            <div class="card-header border-bottom-0" v-bind:class="[bulk_action.show ? 'bg-gradient-primary' : '']">
+            <div class="card-header border-bottom-0" :class="[{'bg-gradient-primary': bulk_action.show}]">
                 {!! Form::open([
+                    'method' => 'GET',
                     'route' => 'items.index',
                     'role' => 'form',
-                    'method' => 'GET',
                     'class' => 'mb-0'
                 ]) !!}
-                    <div class="row" v-if="!bulk_action.show">
-                        <div class="col-12 d-flex align-items-center">
-                            <span class="font-weight-400 d-none d-lg-block mr-2">{{ trans('general.search') }}:</span>
-                            <akaunting-search></akaunting-search>
-                        </div>
+                    <div class="align-items-center" v-if="!bulk_action.show">
+                        <akaunting-search
+                            :placeholder="'{{ trans('general.search_placeholder') }}'"
+                            :options="{{ json_encode([]) }}"
+                        ></akaunting-search>
                     </div>
 
-                    {{ Form::bulkActionRowGroup('general.items', $bulk_actions, 'common/items') }}
+                    {{ Form::bulkActionRowGroup('general.items', $bulk_actions, ['group' => 'common', 'type' => 'items']) }}
                 {!! Form::close() !!}
             </div>
 
@@ -52,11 +52,11 @@
                                     {{ Form::bulkActionGroup($item->id, $item->name) }}
                                 </td>
                                 <td class="col-xs-4 col-sm-4 col-md-4 col-lg-3 col-xl-3 py-2">
-                                    <img src="{{ $item->picture ? Storage::url($item->picture->id) : asset('public/img/akaunting-logo-green.png') }}" class="avatar image-style p-1 mr-3 item-img hidden-md col-aka" alt="{{ $item->name }}">
+                                    <img src="{{ $item->picture ? Storage::url($item->picture->id) : asset('public/img/akaunting-logo-green.svg') }}" class="avatar image-style p-1 mr-3 item-img hidden-md col-aka" alt="{{ $item->name }}">
                                     <a href="{{ route('items.edit', $item->id) }}">{{ $item->name }}</a>
                                 </td>
                                 <td class="col-lg-1 col-xl-2 d-none d-lg-block">
-                                    {{ $item->category ? $item->category->name : trans('general.na') }}
+                                    {{ $item->category->name }}
                                 </td>
                                 <td class="col-md-3 col-lg-3 col-xl-2 text-right d-none d-md-block">
                                     {{ money($item->sale_price, setting('default.currency'), true) }}
@@ -69,9 +69,9 @@
                                         {{ Form::enabledGroup($item->id, $item->name, $item->enabled) }}
                                     @else
                                         @if ($item->enabled)
-                                            <badge rounded type="success">{{ trans('general.enabled') }}</badge>
+                                            <badge rounded type="success" class="mw-60">{{ trans('general.yes') }}</badge>
                                         @else
-                                            <badge rounded type="danger">{{ trans('general.disabled') }}</badge>
+                                            <badge rounded type="danger" class="mw-60">{{ trans('general.no') }}</badge>
                                         @endif
                                     @endif
                                 </td>
@@ -88,7 +88,7 @@
                                             @endpermission
                                             @permission('delete-common-items')
                                                 <div class="dropdown-divider"></div>
-                                                {!! Form::deleteLink($item, 'common/items') !!}
+                                                {!! Form::deleteLink($item, 'items.destroy') !!}
                                             @endpermission
                                         </div>
                                     </div>

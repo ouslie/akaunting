@@ -107,8 +107,8 @@ const app = new Vue({
             });
         },
 
-        next() {
-            if (this.active++ > 3);
-        }
+        onSubmit() {
+            this.form.oldSubmit();
+        },
     }
 });

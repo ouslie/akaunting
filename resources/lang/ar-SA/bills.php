@@ -13,6 +13,7 @@ return [
     'price'                 => 'السعر',
     'sub_total'             => 'المبلغ الإجمالي',
     'discount'              => 'خصم',
+    'item_discount'         => 'Line Discount',
     'tax_total'             => 'إجمالي الضريبة',
     'total'                 => 'المجموع',
 
@@ -22,34 +23,41 @@ return [
     'add_discount'          => 'إضافة خصم',
     'discount_desc'         => 'من المجموع الجزئي',
 
-    'payment_due'           => 'استحقاق الدفع',
-    'amount_due'            => 'استحقاق المبلغ',
+    'payment_due'           => 'الدفع المستحق',
+    'amount_due'            => 'المبلغ المستحق',
     'paid'                  => 'مدفوع',
     'histories'             => 'سجلات',
     'payments'              => 'المدفوعات',
     'add_payment'           => 'إضافة مدفوعات',
+    'mark_paid'             => 'تم التحديد كمدفوع',
     'mark_received'         => 'تحديد كمستلم',
+    'mark_cancelled'        => 'تم إلغاء العلامة',
     'download_pdf'          => 'تحميل PDF',
     'send_mail'             => 'إرسال بريد إلكتروني',
-    'create_bill'           => 'إنشاء فاتورة',
-    'receive_bill'          => 'إستلام فاتورة',
+    'create_bill'           => 'إنشاء فاتورة شراء',
+    'receive_bill'          => 'إستلام فاتورة شراء',
     'make_payment'          => 'القيام بالدفع',
 
-    'status' => [
+    'statuses' => [
         'draft'             => 'مسودة',
-        'received'          => 'مستلم',
+        'received'          => 'مستلمة',
         'partial'           => 'جزئي',
         'paid'              => 'مدفوع',
+        'overdue'           => 'متأخر',
+        'unpaid'            => 'غير مدفوع',
+        'cancelled'         => 'Cancelled',
     ],
 
     'messages' => [
-        'received'          => 'تم تحويل فاتورة الشراء إلى فاتورة مستلمة بنجاح!',
-        'draft'             => 'This is a <b>DRAFT</b> bill and will be reflected to charts after it gets received.',
+        'marked_received'   => 'Bill marked as received!',
+        'marked_paid'       => 'الفاتورة عُلّمت كمدفوعة!',
+        'marked_cancelled'  => 'Bill marked as cancelled!',
+        'draft'             => 'هذة فاتورة شراء عبارة عن <b> مسودة </b> و سوف يتم اظهارها بالنظام بعد ان يتم استحقاقها.',
 
         'status' => [
             'created'       => 'إضافة في: تاريخ',
             'receive' => [
-                'draft'     => 'عدم الإرسال',
+                'draft'     => 'لم يتم ارسالها',
                 'received'  => 'وردت في: تاريخ',
             ],
             'paid' => [

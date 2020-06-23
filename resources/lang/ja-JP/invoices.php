@@ -13,6 +13,7 @@ return [
     'price'                 => '価格',
     'sub_total'             => '小計',
     'discount'              => '割引',
+    'item_discount'         => 'ライン割引',
     'tax_total'             => '税合計',
     'total'                 => '合計',
 
@@ -29,6 +30,8 @@ return [
     'add_payment'           => '支払いを追加',
     'mark_paid'             => 'マークペイド',
     'mark_sent'             => '送信済みマーク',
+    'mark_viewed'           => 'マーク済み',
+    'mark_cancelled'        => 'キャンセル済みとマーク',
     'download_pdf'          => 'PDFをダウンロード',
     'send_mail'             => 'メールを送る',
     'all_invoices'          => 'すべての請求書を表示するにはログインしてください',
@@ -37,19 +40,24 @@ return [
     'get_paid'              => '支払いを受ける',
     'accept_payments'       => 'オンラインでの支払いを受け入れる',
 
-    'status' => [
-        'draft'             => '下書き',
+    'statuses' => [
+        'draft'             => 'ドラフト',
         'sent'              => '送信',
         'viewed'            => '閲覧',
-        'approved'          => '承認',
+        'approved'          => '承認済み',
         'partial'           => '部分的',
-        'paid'              => '有料',
+        'paid'              => '支払済み',
+        'overdue'           => '遅れた',
+        'unpaid'            => '未払い',
+        'cancelled'         => 'キャンセルしました',
     ],
 
     'messages' => [
         'email_sent'        => '請求書メールが送信されました！',
         'marked_sent'       => '請求書が送信済みとしてマークされました！',
         'marked_paid'       => '支払済みとしてマークされた請求書！',
+        'marked_viewed'     => '請求書は閲覧済みとしてマークされました！',
+        'marked_cancelled'  => 'キャンセル済みとしてマークされた請求書！',
         'email_required'    => 'この顧客のメールアドレスはありません。',
         'draft'             => 'これは <b>ドラフト</b>請求書で、送信後にチャートに反映されます。',
 

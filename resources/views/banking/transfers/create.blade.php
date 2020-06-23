@@ -21,7 +21,7 @@
 
                     {{ Form::selectGroup('to_account_id', trans('transfers.to_account'), 'university', $accounts) }}
 
-                    {{ Form::moneyGroup('amount', trans('general.amount'), 'money-bill-alt', ['required' => 'required', 'currency' => $currency], 0) }}
+                    {{ Form::moneyGroup('amount', trans('general.amount'), 'money-bill-alt', ['required' => 'required', 'currency' => $currency, 'dynamic-currency' => 'currency'], 0) }}
 
                     {{ Form::dateGroup('transferred_at', trans('general.date'), 'calendar', ['id' => 'transferred_at', 'class' => 'form-control datepicker', 'required' => 'required', 'date-format' => 'Y-m-d', 'autocomplete' => 'off'], Date::now()->toDateString()) }}
 
@@ -37,8 +37,8 @@
             </div>
 
             <div class="card-footer">
-                <div class="row float-right">
-                    {{ Form::saveButtons('banking/transfers') }}
+                <div class="row save-buttons">
+                    {{ Form::saveButtons('transfers.index') }}
                 </div>
             </div>
         {!! Form::close() !!}

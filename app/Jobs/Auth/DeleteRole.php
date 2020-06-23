@@ -3,7 +3,6 @@
 namespace App\Jobs\Auth;
 
 use App\Abstracts\Job;
-use Artisan;
 
 class DeleteRole extends Job
 {
@@ -22,13 +21,13 @@ class DeleteRole extends Job
     /**
      * Execute the job.
      *
-     * @return boolean
+     * @return boolean|Exception
      */
     public function handle()
     {
         $this->role->delete();
 
-        Artisan::call('cache:clear');
+        $this->role->flushCache();
 
         return true;
     }

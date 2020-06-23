@@ -1,5 +1,5 @@
-<div class="table-responsive overflow-auto mt-4">
-    <table class="table align-items-center rp-border-collapse">
+<div class="table-responsive">
+    <table class="table table-hover align-items-center rp-border-collapse">
         @include($class->views['table.header'])
         <tbody>
             @if (!empty($class->row_values[$table]))
@@ -9,7 +9,7 @@
             @else
                 <tr>
                     <td colspan="{{ count($class->dates) + 2 }}">
-                        <h5 class="text-center pl-0">{{ trans('general.no_records') }}</h5>
+                        <div class="text-muted pl-0">{{ trans('general.no_records') }}</div>
                     </td>
                 </tr>
             @endif

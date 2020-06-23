@@ -13,6 +13,7 @@ return [
     'price'                 => 'Precio',
     'sub_total'             => 'Subtotal',
     'discount'              => 'Descuento',
+    'item_discount'         => 'Descuento de línea',
     'tax_total'             => 'Total Impuestos',
     'total'                 => 'Total ',
 
@@ -29,6 +30,8 @@ return [
     'add_payment'           => 'Añadir pago',
     'mark_paid'             => 'Marcar Como Pagada',
     'mark_sent'             => 'Marcar Como Enviada',
+    'mark_viewed'           => 'Marcar como visto',
+    'mark_cancelled'        => 'Marcar como Cancelada',
     'download_pdf'          => 'Descargar PDF',
     'send_mail'             => 'Enviar Email',
     'all_invoices'          => 'Inicie sesión para ver todas las facturas',
@@ -37,19 +40,24 @@ return [
     'get_paid'              => 'Recibir Pago',
     'accept_payments'       => 'Aceptar Pagos Online',
 
-    'status' => [
+    'statuses' => [
         'draft'             => 'Borrador',
-        'sent'              => 'Enviado',
+        'sent'              => 'Enviada',
         'viewed'            => 'Visto',
-        'approved'          => 'Aprobado',
-        'partial'           => 'Parcial',
-        'paid'              => 'Pagado',
+        'approved'          => 'Aprobada',
+        'partial'           => 'Pago Parcial',
+        'paid'              => 'Pagada',
+        'overdue'           => 'Vencida',
+        'unpaid'            => 'No Pagada',
+        'cancelled'         => 'Cancelada',
     ],
 
     'messages' => [
         'email_sent'        => '¡El correo electrónico de la factura ha sido enviado!',
         'marked_sent'       => '¡Factura marcada como enviada!',
         'marked_paid'       => '¡Factura marcada como pagada!',
+        'marked_viewed'     => '¡Factura marcada como vista!',
+        'marked_cancelled'  => '¡Factura marcada como cancelada!',
         'email_required'    => 'Ninguna dirección de correo electrónico para este cliente!',
         'draft'             => 'Esta es una factura <b>BORRADOR</b> y se reflejará en los gráficos luego de que sea enviada.',
 

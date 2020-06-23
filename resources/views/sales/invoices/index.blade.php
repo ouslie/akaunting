@@ -5,7 +5,7 @@
 @section('new_button')
     @permission('create-sales-invoices')
         <span><a href="{{ route('invoices.create') }}" class="btn btn-primary btn-sm btn-success header-button-top"><span class="fa fa-plus"></span> &nbsp;{{ trans('general.add_new') }}</a></span>
-        <span><a href="{{ url('common/import/sales/invoices') }}" class="btn btn-white btn-sm header-button-top"><span class="fa fa-upload"></span> &nbsp;{{ trans('import.import') }}</a></span>
+        <span><a href="{{ route('import.create', ['group' => 'sales', 'type' => 'invoices']) }}" class="btn btn-white btn-sm header-button-top"><span class="fa fa-upload"></span> &nbsp;{{ trans('import.import') }}</a></span>
     @endpermission
     <span><a href="{{ route('invoices.export', request()->input()) }}" class="btn btn-white btn-sm header-button-top"><span class="fa fa-download"></span> &nbsp;{{ trans('general.export') }}</a></span>
 @endsection
@@ -13,21 +13,21 @@
 @section('content')
     @if ($invoices->count())
         <div class="card">
-            <div class="card-header border-bottom-0" v-bind:class="[bulk_action.show ? 'bg-gradient-primary' : '']">
+            <div class="card-header border-bottom-0" :class="[{'bg-gradient-primary': bulk_action.show}]">
                 {!! Form::open([
-                    'url' => 'sales/invoices',
-                    'role' => 'form',
                     'method' => 'GET',
+                    'route' => 'invoices.index',
+                    'role' => 'form',
                     'class' => 'mb-0'
                 ]) !!}
-                    <div class="row" v-if="!bulk_action.show">
-                        <div class="col-12 d-flex align-items-center">
-                            <span class="font-weight-400 d-none d-lg-block mr-2">{{ trans('general.search') }}:</span>
-                            <akaunting-search></akaunting-search>
-                        </div>
+                    <div class="align-items-center" v-if="!bulk_action.show">
+                        <akaunting-search
+                            :placeholder="'{{ trans('general.search_placeholder') }}'"
+                            :options="{{ json_encode([]) }}"
+                        ></akaunting-search>
                     </div>
 
-                    {{ Form::bulkActionRowGroup('general.invoices', $bulk_actions, 'sales/invoices') }}
+                    {{ Form::bulkActionRowGroup('general.invoices', $bulk_actions, ['group' => 'sales', 'type' => 'invoices']) }}
                 {!! Form::close() !!}
             </div>
 
@@ -71,14 +71,20 @@
                                             @endif
                                             <div class="dropdown-divider"></div>
 
-                                            @permission('create-sales-invoices')
-                                                <a class="dropdown-item" href="{{ route('invoices.duplicate', $item->id) }}">{{ trans('general.duplicate') }}</a>
-                                                <div class="dropdown-divider"></div>
-                                            @endpermission
+                                            @if ($item->status != 'cancelled')
+                                                @permission('create-sales-invoices')
+                                                    <a class="dropdown-item" href="{{ route('invoices.duplicate', $item->id) }}">{{ trans('general.duplicate') }}</a>
+                                                    <div class="dropdown-divider"></div>
+                                                @endpermission
+
+                                                @permission('update-sales-invoices')
+                                                    <a class="dropdown-item" href="{{ route('invoices.cancelled', $item->id) }}">{{ trans('general.cancel') }}</a>
+                                                @endpermission
+                                            @endif
 
                                             @permission('delete-sales-invoices')
                                                 @if (!$item->reconciled)
-                                                    {!! Form::deleteLink($item, 'sales/invoices') !!}
+                                                    {!! Form::deleteLink($item, 'invoices.destroy') !!}
                                                 @endif
                                             @endpermission
                                         </div>

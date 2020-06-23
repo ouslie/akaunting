@@ -48,7 +48,7 @@
     @stack('status_message_end')
 
     @stack('timeline_start')
-        @if ($invoice->status != 'paid')
+        @if (!in_array($invoice->status, ['paid', 'cancelled']))
             @stack('timeline_body_start')
                 <div class="card">
                     <div class="card-body">
@@ -71,7 +71,7 @@
 
                                             <div class="mt-3">
                                                 @stack('timeline_body_create_invoice_body_button_edit_start')
-                                                    <a href="{{ url('sales/invoices/' . $invoice->id . '/edit') }}" class="btn btn-primary btn-sm btn-alone">
+                                                    <a href="{{ route('invoices.edit', $invoice->id) }}" class="btn btn-primary btn-sm btn-alone">
                                                         {{ trans('general.edit') }}
                                                     </a>
                                                 @stack('timeline_body_create_invoice_body_button_edit_end')
@@ -102,7 +102,7 @@
                                                     @stack('timeline_body_send_invoice_body_button_sent_start')
                                                         @permission('update-sales-invoices')
                                                             @if($invoice->status == 'draft')
-                                                                <a href="{{ url('sales/invoices/' . $invoice->id . '/sent') }}" class="btn btn-white btn-sm header-button-top">{{ trans('invoices.mark_sent') }}</a>
+                                                                <a href="{{ route('invoices.sent', $invoice->id) }}" class="btn btn-white btn-sm header-button-top">{{ trans('invoices.mark_sent') }}</a>
                                                             @else
                                                                 <button type="button" class="btn btn-secondary btn-sm header-button-top" disabled="disabled">
                                                                     <span class="text-disabled">{{ trans('invoices.mark_sent') }}</span>
@@ -113,7 +113,7 @@
 
                                                     @stack('timeline_body_send_invoice_body_button_email_start')
                                                         @if($invoice->contact_email)
-                                                            <a href="{{ url('sales/invoices/' . $invoice->id . '/email') }}" class="btn btn-danger btn-sm header-button-bottom">{{ trans('invoices.send_mail') }}</a>
+                                                            <a href="{{ route('invoices.email', $invoice->id) }}" class="btn btn-danger btn-sm header-button-bottom">{{ trans('invoices.send_mail') }}</a>
                                                         @else
                                                             <button type="button" class="btn btn-white btn-sm header-button-bottom green-tooltip" disabled="disabled" data-toggle="tooltip" data-placement="right" title="{{ trans('invoices.messages.email_required') }}">
                                                                 <span class="text-disabled">{{ trans('invoices.send_mail') }}</span>
@@ -129,7 +129,7 @@
                                             @else
                                                 @stack('timeline_body_send_invoice_body_message_start')
                                                     <small>{{ trans_choice('general.statuses', 1) . ':' }}</small>
-                                                    <small>{{ trans('invoices.messages.status.send.sent', ['date' => Date::parse($invoice->created_at)->format($date_format)]) }}</small>
+                                                    <small>{{ trans('invoices.messages.status.send.sent', ['date' => Date::parse($invoice->sent_at)->format($date_format)]) }}</small>
                                                 @stack('timeline_body_send_invoice_body_message_end')
                                             @endif
                                         @stack('timeline_body_send_invoice_body_end')
@@ -340,10 +340,10 @@
                 @stack('invoice_item_start')
                     <div class="row show-table">
                         <div class="col-md-12">
-                            <div class="table-responsive">
+                            <div class="table-responsive overflow-y-hidden">
                                 <table class="table table-striped">
                                     <tbody>
-                                        <tr class="row">
+                                        <tr class="d-flex flex-nowrap">
                                             @stack('name_th_start')
                                                 <th class="col-xs-4 col-sm-5 pl-5">{{ trans_choice($text_override['items'], 2) }}</th>
                                             @stack('name_th_end')
@@ -356,33 +356,18 @@
                                                 <th class="col-sm-3 text-right d-none d-sm-block">{{ trans($text_override['price']) }}</th>
                                             @stack('price_th_end')
 
+                                            @if (in_array(setting('localisation.discount_location', 'total'), ['item', 'both']))
+                                                @stack('discount_th_start')
+                                                    <th class="col-sm-1 text-center d-none d-sm-block">{{ trans('invoices.discount') }}</th>
+                                                @stack('discount_th_end')
+                                            @endif
+
                                             @stack('total_th_start')
                                                 <th class="col-xs-4 col-sm-3 text-right pr-5">{{ trans('invoices.total') }}</th>
                                             @stack('total_th_end')
                                         </tr>
-                                        @foreach($invoice->items as $invoice_item)
-                                            <tr class="row">
-                                                @stack('name_td_start')
-                                                    <td class="col-xs-4 col-sm-5 pl-5">
-                                                        {{ $invoice_item->name }}
-                                                        @if (!empty($invoice_item->item->description))
-                                                            <br><small class="text-pre-nowrap">{!! \Illuminate\Support\Str::limit($invoice_item->item->description, 500) !!}<small>
-                                                        @endif
-                                                    </td>
-                                                @stack('name_td_end')
-
-                                                @stack('quantity_td_start')
-                                                    <td class="col-xs-4 col-sm-1 text-center">{{ $invoice_item->quantity }}</td>
-                                                @stack('quantity_td_end')
-
-                                                @stack('price_td_start')
-                                                    <td class="col-sm-3 text-right d-none d-sm-block">@money($invoice_item->price, $invoice->currency_code, true)</td>
-                                                @stack('price_td_end')
-
-                                                @stack('total_td_start')
-                                                    <td class="col-xs-4 col-sm-3 text-right pr-5">@money($invoice_item->total, $invoice->currency_code, true)</td>
-                                                @stack('total_td_end')
-                                            </tr>
+                                        @foreach($invoice->items as $item)
+                                            @include('partials.documents.item.show', ['document' => $invoice])
                                         @endforeach
                                     </tbody>
                                 </table>
@@ -415,7 +400,7 @@
                             <div class="table-responsive">
                                 <table class="table">
                                     <tbody>
-                                        @foreach ($invoice->totals as $total)
+                                        @foreach ($invoice->totals_sorted as $total)
                                             @if ($total->code != 'total')
                                                 @stack($total->code . '_td_start')
                                                     <tr>
@@ -426,7 +411,9 @@
                                             @else
                                                 @if ($invoice->paid)
                                                     <tr>
-                                                        <th class="text-success">{{ trans('invoices.paid') }}:</th>
+                                                        <th class="text-success">
+                                                            {{ trans('invoices.paid') }}:
+                                                        </th>
                                                         <td class="text-success text-right">- @money($invoice->paid, $invoice->currency_code, true)</td>
                                                     </tr>
                                                 @endif
@@ -448,83 +435,99 @@
 
             @stack('card_footer_start')
                 <div class="card-footer">
-                    <div class="float-right">
-                        @stack('button_edit_start')
-                            @if(!$invoice->reconciled)
-                                <a href="{{ url('sales/invoices/' . $invoice->id . '/edit') }}" class="btn btn-info header-button-top">
-                                    <i class="fas fa-edit"></i>&nbsp; {{ trans('general.edit') }}
-                                </a>
+                    <div class="row align-items-center">
+                        <div class="col-xs-12 col-sm-4">
+                            @if ($invoice->attachment)
+                                @php $file = $invoice->attachment; @endphp
+                                @include('partials.media.file')
                             @endif
-                        @stack('button_edit_end')
+                        </div>
 
-                        @stack('button_print_start')
-                            <a href="{{ url('sales/invoices/' . $invoice->id . '/print') }}" target="_blank" class="btn btn-success header-button-top">
-                                <i class="fa fa-print"></i>&nbsp; {{ trans('general.print') }}
-                            </a>
-                        @stack('button_print_end')
+                        <div class="col-xs-12 col-sm-8 text-right">
+                            @stack('button_edit_start')
+                                @if(!$invoice->reconciled)
+                                    <a href="{{ route('invoices.edit', $invoice->id) }}" class="btn btn-info header-button-top">
+                                        <i class="fas fa-edit"></i>&nbsp; {{ trans('general.edit') }}
+                                    </a>
+                                @endif
+                            @stack('button_edit_end')
 
-                        @stack('button_share_start')
-                            <a href="{{ $signed_url }}" target="_blank" class="btn btn-white header-button-top">
-                                <i class="fa fa-share"></i>&nbsp; Share
-                            </a>
-                        @stack('button_share_end')
+                            @stack('button_print_start')
+                                <a href="{{ route('invoices.print', $invoice->id) }}" target="_blank" class="btn btn-success header-button-top">
+                                    <i class="fa fa-print"></i>&nbsp; {{ trans('general.print') }}
+                                </a>
+                            @stack('button_print_end')
 
-                        @stack('button_group_start')
-                            <div class="dropup">
-                                <button type="button" class="btn btn-primary header-button-top" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-chevron-up"></i>&nbsp; {{ trans('general.more_actions') }}</button>
-                                <div class="dropdown-menu" role="menu">
-                                    @stack('button_pay_start')
-                                        @if($invoice->status != 'paid')
-                                            @permission('update-sales-invoices')
-                                                <a class="dropdown-item" href="{{ url('sales/invoices/' . $invoice->id . '/pay') }}">{{ trans('invoices.mark_paid') }}</a>
-                                            @endpermission
+                            @if ($invoice->status != 'cancelled')
+                                @stack('button_share_start')
+                                    <a href="{{ $signed_url }}" target="_blank" class="btn btn-white header-button-top">
+                                        <i class="fa fa-share"></i>&nbsp; {{ trans('general.share') }}
+                                    </a>
+                                @stack('button_share_end')
+                            @endif
 
-                                            @if(empty($invoice->paid) || ($invoice->paid != $invoice->amount))
-                                                <button class="dropdown-item" id="button-payment" @click="onPayment">{{ trans('invoices.add_payment') }}</button>
-                                            @endif
-                                            <div class="dropdown-divider"></div>
+                            @stack('button_group_start')
+                                <div class="dropup header-drop-top">
+                                    <button type="button" class="btn btn-primary header-button-top" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-chevron-up"></i>&nbsp; {{ trans('general.more_actions') }}</button>
+                                    <div class="dropdown-menu" role="menu">
+                                        @if ($invoice->status != 'cancelled')
+                                            @stack('button_pay_start')
+                                                @if ($invoice->status != 'paid')
+                                                    @permission('update-sales-invoices')
+                                                        <a class="dropdown-item" href="{{ route('invoices.paid', $invoice->id) }}">{{ trans('invoices.mark_paid') }}</a>
+                                                    @endpermission
+
+                                                    @if(empty($invoice->paid) || ($invoice->paid != $invoice->amount))
+                                                        <button class="dropdown-item" id="button-payment" @click="onPayment">{{ trans('invoices.add_payment') }}</button>
+                                                    @endif
+                                                    <div class="dropdown-divider"></div>
+                                                @endif
+                                            @stack('button_pay_end')
+
+                                            @stack('button_sent_start')
+                                                @permission('update-sales-invoices')
+                                                    @if ($invoice->status == 'draft')
+                                                        <a class="dropdown-item" href="{{ route('invoices.sent', $invoice->id) }}">{{ trans('invoices.mark_sent') }}</a>
+                                                    @else
+                                                        <button type="button" class="dropdown-item" disabled="disabled"><span class="text-disabled">{{ trans('invoices.mark_sent') }}</span></button>
+                                                    @endif
+                                                @endpermission
+                                            @stack('button_sent_end')
+
+                                            @stack('button_email_start')
+                                                @if ($invoice->contact_email)
+                                                    <a class="dropdown-item" href="{{ route('invoices.email', $invoice->id) }}">{{ trans('invoices.send_mail') }}</a>
+                                                @else
+                                                    <button type="button" class="dropdown-item" disabled="disabled" data-toggle="tooltip" data-placement="right" title="{{ trans('invoices.messages.email_required') }}">
+                                                        <span class="text-disabled">{{ trans('invoices.send_mail') }}</span>
+                                                    </button>
+                                                @endif
+                                            @stack('button_email_end')
                                         @endif
-                                    @stack('button_pay_end')
 
-                                    @stack('button_sent_start')
+                                        @stack('button_pdf_start')
+                                            <a class="dropdown-item" href="{{ route('invoices.pdf', $invoice->id) }}">{{ trans('invoices.download_pdf') }}</a>
+                                        @stack('button_pdf_end')
+
                                         @permission('update-sales-invoices')
-                                            @if($invoice->status == 'draft')
-                                                <a class="dropdown-item" href="{{ url('sales/invoices/' . $invoice->id . '/sent') }}">{{ trans('invoices.mark_sent') }}</a>
-                                            @else
-                                                <button type="button" class="dropdown-item" disabled="disabled"><span class="text-disabled">{{ trans('invoices.mark_sent') }}</span></button>
+                                            @if ($invoice->status != 'cancelled')
+                                                @stack('button_cancelled_start')
+                                                <a class="dropdown-item" href="{{ route('invoices.cancelled', $invoice->id) }}">{{ trans('general.cancel') }}</a>
+                                                @stack('button_cancelled_end')
                                             @endif
                                         @endpermission
-                                    @stack('button_sent_end')
 
-                                    @stack('button_email_start')
-                                        @if($invoice->contact_email)
-                                            <a class="dropdown-item" href="{{ url('sales/invoices/' . $invoice->id . '/email') }}">{{ trans('invoices.send_mail') }}</a>
-                                        @else
-                                            <button type="button" class="dropdown-item" disabled="disabled" data-toggle="tooltip" data-placement="right" title="{{ trans('invoices.messages.email_required') }}">
-                                                <span class="text-disabled">{{ trans('invoices.send_mail') }}</span>
-                                            </button>
-                                        @endif
-                                    @stack('button_email_end')
-
-                                    @stack('button_pdf_start')
-                                        <a class="dropdown-item" href="{{ url('sales/invoices/' . $invoice->id . '/pdf') }}">{{ trans('invoices.download_pdf') }}</a>
-                                    @stack('button_pdf_end')
-
-                                    @stack('button_delete_start')
                                         @permission('delete-sales-invoices')
-                                            @if(!$invoice->reconciled)
+                                            @if (!$invoice->reconciled)
+                                                @stack('button_delete_start')
                                                 {!! Form::deleteLink($invoice, 'sales/invoices') !!}
+                                                @stack('button_delete_end')
                                             @endif
                                         @endpermission
-                                    @stack('button_delete_end')
+                                    </div>
                                 </div>
-                            </div>
-                        @stack('button_group_end')
-
-                        @if($invoice->attachment)
-                            @php $file = $invoice->attachment; @endphp
-                            @include('partials.media.file')
-                        @endif
+                            @stack('button_group_end')
+                        </div>
                     </div>
                 </div>
             @stack('card_footer_end')
@@ -537,12 +540,12 @@
                 <div class="col-sm-6 col-md-6 col-lg-6 col-xl-6">
                     <div class="accordion">
                         <div class="card">
-                            <div class="card-header" id="headingOne" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            <div class="card-header" id="accordion-histories-header" data-toggle="collapse" data-target="#accordion-histories-body" aria-expanded="false" aria-controls="accordion-histories-body">
                                 <h4 class="mb-0">{{ trans('invoices.histories') }}</h4>
                             </div>
-                            <div id="collapseOne" class="collapse hide" aria-labelledby="headingOne">
+                            <div id="accordion-histories-body" class="collapse hide" aria-labelledby="accordion-histories-header">
                                 <div class="table-responsive">
-                                    <table class="table table-hover">
+                                    <table class="table table-flush table-hover">
                                         <thead class="thead-light">
                                             <tr class="row table-head-line">
                                                 <th class="col-xs-4 col-sm-2">{{ trans('general.date') }}</th>
@@ -552,7 +555,7 @@
                                         </thead>
                                         <tbody>
                                             @foreach($invoice->histories as $history)
-                                                <tr class="row align-items-center">
+                                                <tr class="row align-items-center border-top-1 tr-py">
                                                     <td class="col-xs-4 col-sm-2">@date($history->created_at)</td>
                                                     <td class="col-xs-4 col-sm-3 text-left">{{ trans('invoices.statuses.' . $history->status) }}</td>
                                                     <td class="col-xs-4 col-sm-7 text-left long-texts">{{ $history->description }}</td>
@@ -571,10 +574,10 @@
                 <div class="col-sm-6 col-md-6 col-lg-6 col-xl-6">
                     <div class="accordion">
                         <div class="card">
-                            <div class="card-header" id="headingTwo" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            <div class="card-header" id="accordion-transactions-header" data-toggle="collapse" data-target="#accordion-transactions-body" aria-expanded="false" aria-controls="accordion-transactions-body">
                                 <h4 class="mb-0">{{ trans_choice('general.transactions', 2) }}</h4>
                             </div>
-                            <div id="collapseTwo" class="collapse hide" aria-labelledby="headingTwo">
+                            <div id="accordion-transactions-body" class="collapse hide" aria-labelledby="accordion-transactions-header">
                                 <div class="table-responsive">
                                     <table class="table table-flush table-hover">
                                         <thead class="thead-light">
@@ -588,7 +591,7 @@
                                         <tbody>
                                             @if ($invoice->transactions->count())
                                                 @foreach($invoice->transactions as $transaction)
-                                                    <tr class="row align-items-center border-top-1">
+                                                    <tr class="row align-items-center border-top-1 tr-py">
                                                         <td class="col-xs-4 col-sm-3">@date($transaction->paid_at)</td>
                                                         <td class="col-xs-4 col-sm-3">@money($transaction->amount, $transaction->currency_code, true)</td>
                                                         <td class="col-sm-3 d-none d-sm-block">{{ $transaction->account->name }}</td>
@@ -598,30 +601,18 @@
                                                                     {{ trans('reconciliations.reconciled') }}
                                                                 </button>
                                                             @else
-                                                                {!! Form::open([
-                                                                    'id' => 'invoice-transaction-' . $transaction->id,
-                                                                    'method' => 'DELETE',
-                                                                    'route' => ['transactions.destroy', $transaction->id],
-                                                                    'class' => 'd-inline'
-                                                                ]) !!}
-                                                                    {{ Form::hidden('form_id', '#invoice-transaction-' . $transaction->id, ['id' => 'form_id-' . $transaction->id]) }}
-                                                                    {{ Form::hidden('title', trans_choice('general.transactions', 2), ['id' => 'title-' . $transaction->id]) }}
-                                                                    @php $message = trans('general.delete_confirm', [
-                                                                        'name' => '<strong>' . Date::parse($transaction->paid_at)->format($date_format) . ' - ' . money($transaction->amount, $transaction->currency_code, true) . ' - ' . $transaction->account->name . '</strong>',
-                                                                        'type' => strtolower(trans_choice('general.transactions', 1))
-                                                                        ]);
-                                                                    @endphp
-                                                                    {{ Form::hidden('message', $message, ['id' => 'mesage-' . $transaction->id]) }}
-                                                                    {{ Form::hidden('cancel', trans('general.cancel'), ['id' => 'cancel-' . $transaction->id]) }}
-                                                                    {{ Form::hidden('delete', trans('general.delete'), ['id' => 'delete-' . $transaction->id]) }}
+                                                                @php $message = trans('general.delete_confirm', [
+                                                                    'name' => '<strong>' . Date::parse($transaction->paid_at)->format($date_format) . ' - ' . money($transaction->amount, $transaction->currency_code, true) . ' - ' . $transaction->account->name . '</strong>',
+                                                                    'type' => strtolower(trans_choice('general.transactions', 1))
+                                                                    ]);
+                                                                @endphp
 
-                                                                    {!! Form::button('<i class="fa fa-trash-o" aria-hidden="true"></i> ' . trans('general.delete'), array(
-                                                                        'type'    => 'button',
-                                                                        'class'   => 'btn btn-danger btn-sm',
-                                                                        'title'   => trans('general.delete'),
-                                                                        '@click'  => 'onDeleteTransaction("invoice-transaction-' . $transaction->id . '")'
-                                                                    )) !!}
-                                                                {!! Form::close() !!}
+                                                                {!! Form::button('<i class="fa fa-trash-o" aria-hidden="true"></i> ' . trans('general.delete'), array(
+                                                                    'type'    => 'button',
+                                                                    'class'   => 'btn btn-danger btn-sm',
+                                                                    'title'   => trans('general.delete'),
+                                                                    '@click'  => 'confirmDelete("' . route('transactions.destroy', $transaction->id) . '", "' . trans_choice('general.transactions', 2) . '", "' . $message. '",  "' . trans('general.cancel') . '", "' . trans('general.delete') . '")'
+                                                                )) !!}
                                                             @endif
                                                         </td>
                                                     </tr>
@@ -629,7 +620,7 @@
                                             @else
                                                 <tr>
                                                     <td colspan="4">
-                                                        <div class="text-muted" id="datatable-basic_info" role="status" aria-live="polite">
+                                                        <div class="text-muted nr-py" id="datatable-basic_info" role="status" aria-live="polite">
                                                             {{ trans('general.no_records') }}
                                                         </div>
                                                     </td>
@@ -645,38 +636,9 @@
             @stack('row_footer_transaction_end')
         </div>
     @stack('row_footer_end')
+
+    {{ Form::hidden('invoice_id', $invoice->id, ['id' => 'invoice_id']) }}
 @endsection
-
-@push('content_content_end')
-    <akaunting-modal
-        :show="payment.modal"
-        @cancel="payment.modal = false"
-        :title="'{{ trans('general.title.new', ['type' => trans_choice('general.payments', 1)]) }}'"
-        :message="payment.html"
-        :button_cancel="'{{ trans('general.button.save') }}'"
-        :button_delete="'{{ trans('general.button.cancel') }}'">
-        <template #modal-body>
-            @include('modals.invoices.payment')
-        </template>
-
-        <template #card-footer>
-            <div class="float-right">
-                <button type="button" class="btn btn-outline-secondary" @click="closePayment">
-                    <span>{{ trans('general.cancel') }}</span>
-                </button>
-
-                <a href="{{ url('apps/categories/payment-method') }}" class="btn btn-white">
-                    <span class="fa fa-money"></span> &nbsp;{{ trans('invoices.accept_payments') }}
-                </a>
-
-                <button type="button" class="btn btn-success button-submit" @click="addPayment">
-                    <div class="aka-loader d-none"></div>
-                    <span>{{ trans('general.confirm') }}</span>
-                </button>
-            </div>
-        </template>
-    </akaunting-modal>
-@endpush
 
 @push('scripts_start')
     <script src="{{ asset('public/js/sales/invoices.js?v=' . version('short')) }}"></script>

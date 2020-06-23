@@ -9,18 +9,24 @@ class InvoiceItems extends Export
 {
     public function collection()
     {
-        $model = Model::with(['invoice', 'item'])->usingSearchString(request('search'));
+        $model = Model::with('invoice', 'item')->usingSearchString(request('search'));
 
         if (!empty($this->ids)) {
             $model->whereIn('invoice_id', (array) $this->ids);
         }
 
-        return $model->get();
+        return $model->cursor();
     }
 
     public function map($model): array
     {
-        $model->invoice_number = $model->invoice->invoice_number;
+        $invoice = $model->invoice;
+
+        if (empty($invoice)) {
+            return [];
+        }
+
+        $model->invoice_number = $invoice->invoice_number;
         $model->item_name = $model->item->name;
 
         return parent::map($model);

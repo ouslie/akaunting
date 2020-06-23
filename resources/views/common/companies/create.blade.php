@@ -23,7 +23,7 @@
 
                     {{ Form::selectGroup('currency', trans_choice('general.currencies', 1), 'exchange-alt', $currencies) }}
 
-                    {{ Form::textGroup('domain', trans('companies.domain'), 'globe', []) }}
+                    {{ Form::selectGroup('locale', trans_choice('general.languages', 1), 'flag', language()->allowed(), setting('default.locale', config('app.locale', 'en-GB')), []) }}
 
                     {{ Form::textareaGroup('address', trans('general.address')) }}
 
@@ -34,8 +34,8 @@
             </div>
 
             <div class="card-footer">
-                <div class="row float-right">
-                    {{ Form::saveButtons('common/companies') }}
+                <div class="row save-buttons">
+                    {{ Form::saveButtons('companies.index') }}
                 </div>
             </div>
         {!! Form::close() !!}

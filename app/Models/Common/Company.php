@@ -3,6 +3,7 @@
 namespace App\Models\Common;
 
 use App\Traits\Media;
+use App\Traits\Tenants;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Kyslik\ColumnSortable\Sortable;
@@ -10,9 +11,11 @@ use Lorisleiva\LaravelSearchString\Concerns\SearchString;
 
 class Company extends Eloquent
 {
-    use Media, SearchString, SoftDeletes, Sortable;
+    use Media, SearchString, SoftDeletes, Sortable, Tenants;
 
     protected $table = 'companies';
+
+    protected $tenantable = false;
 
     protected $dates = ['deleted_at'];
 
@@ -204,7 +207,7 @@ class Company extends Eloquent
 
         $groups = [
             'company',
-            'default'
+            'default',
         ];
 
         foreach ($settings as $setting) {
@@ -236,7 +239,7 @@ class Company extends Eloquent
 
         $groups = [
             'company',
-            'default'
+            'default',
         ];
 
         foreach ($settings as $setting) {
@@ -268,7 +271,7 @@ class Company extends Eloquent
         $search = $request->get('search');
         $limit = $request->get('limit', setting('default.list_limit', '25'));
 
-        return $query->usingSearchString($search)->sortable($sort)->paginate($limit);
+        return user()->companies()->usingSearchString($search)->sortable($sort)->paginate($limit);
     }
 
     /**
@@ -310,7 +313,7 @@ class Company extends Eloquent
     public function emailSortable($query, $direction)
     {
         return $query->join('settings', 'companies.id', '=', 'settings.company_id')
-            ->where('key', 'general.company_email')
+            ->where('key', 'company.email')
             ->orderBy('value', $direction)
             ->select('companies.*');
     }

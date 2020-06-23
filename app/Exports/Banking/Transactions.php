@@ -9,13 +9,13 @@ class Transactions extends Export
 {
     public function collection()
     {
-        $model = Model::with(['account', 'bill', 'category', 'contact', 'invoice'])->usingSearchString(request('search'))->get();
+        $model = Model::with('account', 'bill', 'category', 'contact', 'invoice')->usingSearchString(request('search'));
 
         if (!empty($this->ids)) {
             $model->whereIn('id', (array) $this->ids);
         }
 
-        return $model->get();
+        return $model->cursor();
     }
 
     public function map($model): array

@@ -10,9 +10,9 @@ return [
     'profit_loss'           => 'Receitas & Despesas',
     'gross_profit'          => 'Lucro Bruto',
     'net_profit'            => 'Lucro líquido',
-    'total_expenses'        => 'Total Despesas',
+    'total_expenses'        => 'Despesas Totais',
     'net'                   => 'Líquido',
-    'income-expense'        => 'Receita vs Despesa',
+    'income_expense'        => 'Receita vs Despesa',
 
     'summary' => [
         'income'            => 'Resumo de Venda',

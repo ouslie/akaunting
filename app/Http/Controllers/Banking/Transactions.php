@@ -28,7 +28,7 @@ class Transactions extends Controller
         $request_type = !request()->has('type') ? ['income', 'expense'] : request('type');
         $categories = Category::enabled()->type($request_type)->orderBy('name')->pluck('name', 'id');
 
-        $transactions = Transaction::with(['account', 'category', 'contact'])->collect(['paid_at'=> 'desc']);
+        $transactions = Transaction::with('account', 'category', 'contact')->collect(['paid_at'=> 'desc']);
 
         return view('banking.transactions.index', compact('transactions', 'accounts', 'types', 'categories'));
     }
@@ -84,6 +84,6 @@ class Transactions extends Controller
      */
     public function export()
     {
-        return \Excel::download(new Export(), trans_choice('general.transactions', 2) . '.xlsx');
+        return \Excel::download(new Export(), \Str::filename(trans_choice('general.transactions', 2)) . '.xlsx');
     }
 }

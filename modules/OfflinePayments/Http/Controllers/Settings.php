@@ -3,11 +3,13 @@
 namespace Modules\OfflinePayments\Http\Controllers;
 
 use App\Abstracts\Http\Controller;
-use Artisan;
 use Illuminate\Http\Response;
 use Modules\OfflinePayments\Http\Requests\Setting as Request;
 use Modules\OfflinePayments\Http\Requests\SettingGet as GRequest;
 use Modules\OfflinePayments\Http\Requests\SettingDelete as DRequest;
+use Modules\OfflinePayments\Jobs\CreatePaymentMethod;
+use Modules\OfflinePayments\Jobs\DeletePaymentMethod;
+use Modules\OfflinePayments\Jobs\UpdatePaymentMethod;
 
 class Settings extends Controller
 {
@@ -32,56 +34,24 @@ class Settings extends Controller
      */
     public function update(Request $request)
     {
-        $methods = json_decode(setting('offline-payments.methods'), true);
+        if (!empty($request->get('update_code'))) {
+            $payment_method = $this->dispatch(new UpdatePaymentMethod($request));
 
-        if (isset($request['update_code'])) {
-            foreach ($methods as $key => $method) {
-                if ($method['code'] != $request['update_code']) {
-                    continue;
-                }
-
-                $method = explode('.', $request['update_code']);
-
-                $methods[$key] = [
-                    'code' => 'offline-payments.' . $request['code'] . '.' . $method[2],
-                    'name' => $request['name'],
-                    'customer' => $request['customer'],
-                    'order' => $request['order'],
-                    'description' => $request['description'],
-                ];
-            }
-
-            $message = trans('messages.success.updated', ['type' => $request['name']]);
+            $message = trans('messages.success.updated', ['type' => $payment_method['name']]);
         } else {
-            $methods[] = [
-                'code' => 'offline-payments.' . $request['code'] . '.' . (count($methods) + 1),
-                'name' => $request['name'],
-                'customer' => $request['customer'],
-                'order' => $request['order'],
-                'description' => $request['description'],
-            ];
+            $payment_method = $this->dispatch(new CreatePaymentMethod($request));
 
-            $message = trans('messages.success.added', ['type' => $request['name']]);
+            $message = trans('messages.success.added', ['type' => $payment_method['name']]);
         }
-
-        setting()->set('offline-payments.methods', json_encode($methods));
-
-        setting()->save();
-
-        Artisan::call('cache:clear');
-
-        $response = [
-            'status' => null,
-            'success' => true,
-            'error' => false,
-            'message' => $message,
-            'data' => null,
-            'redirect' => route('offline-payments.settings.edit'),
-        ];
 
         flash($message)->success();
 
-        return response()->json($response);
+        return response()->json([
+            'success' => true,
+            'error' => false,
+            'message' => $message,
+            'redirect' => route('offline-payments.settings.edit'),
+        ]);
     }
 
     /**
@@ -95,7 +65,7 @@ class Settings extends Controller
     {
         $data = [];
 
-        $code = $request['code'];
+        $code = $request->get('code');
 
         $methods = json_decode(setting('offline-payments.methods'), true);
 
@@ -132,31 +102,11 @@ class Settings extends Controller
      */
     public function destroy(DRequest $request)
     {
-        $code = $request['code'];
+        $payment_method = $this->dispatch(new DeletePaymentMethod($request));
 
-        $methods = json_decode(setting('offline-payments.methods'), true);
+        $message = trans('messages.success.deleted', ['type' => $payment_method['name']]);
 
-        $remove = false;
-
-        foreach ($methods as $key => $method) {
-            if ($method['code'] != $code) {
-                continue;
-            }
-
-            $remove = $methods[$key];
-            unset($methods[$key]);
-        }
-
-        // Set Api Token
-        setting()->set('offline-payments.methods', json_encode($methods));
-
-        setting()->save();
-
-        Artisan::call('cache:clear');
-
-        $message = trans('messages.success.deleted', ['type' => $remove['name']]);
-
-        flash($message)->success();
+        //flash($message)->success();
 
         return response()->json([
             'errors' => false,

@@ -13,6 +13,7 @@ return [
     'price'                 => 'Preço',
     'sub_total'             => 'Subtotal',
     'discount'              => 'Desconto',
+    'item_discount'         => 'Line Discount',
     'tax_total'             => 'Total de imposto',
     'total'                 => 'Total',
 
@@ -26,9 +27,11 @@ return [
     'paid'                  => 'Pago',
     'histories'             => 'Histórico',
     'payments'              => 'Pagamentos',
-    'add_payment'           => 'Novo Pagamento',
+    'add_payment'           => 'Adicionar Pagamento',
     'mark_paid'             => 'Marcar como Pago',
     'mark_sent'             => 'Marcar como Enviada',
+    'mark_viewed'           => 'Mark Viewed',
+    'mark_cancelled'        => 'Mark Cancelled',
     'download_pdf'          => 'Transferir em PDF',
     'send_mail'             => 'Enviar E-mail',
     'all_invoices'          => 'Faça o login para ver todas as faturas',
@@ -37,23 +40,30 @@ return [
     'get_paid'              => 'Obter Pagamento',
     'accept_payments'       => 'Aceitar Pagamentos Online',
 
-    'status' => [
+    'statuses' => [
         'draft'             => 'Rascunho',
-        'sent'              => 'Enviado',
-        'viewed'            => 'Visto',
-        'approved'          => 'Aprovado',
+        'sent'              => 'Sent',
+        'viewed'            => 'Viewed',
+        'approved'          => 'Approved',
         'partial'           => 'Parcial',
-        'paid'              => 'Pago',
+        'paid'              => 'Paid',
+        'overdue'           => 'Overdue',
+        'unpaid'            => 'Por Pagar',
+        'cancelled'         => 'Cancelled',
     ],
 
     'messages' => [
-        'email_sent'        => 'O e-mail foi enviado com sucesso!',
-        'marked_sent'       => 'Fatura marcada como enviada com sucesso!',
+        'email_sent'        => 'Invoice email has been sent!',
+        'marked_sent'       => 'Invoice marked as sent!',
+        'marked_paid'       => 'Invoice marked as paid!',
+        'marked_viewed'     => 'Invoice marked as viewed!',
+        'marked_cancelled'  => 'Invoice marked as cancelled!',
         'email_required'    => 'Nenhum endereço de e-mail para este cliente!',
         'draft'             => 'Isto é um <b>RASCUNHO</b> da fatura e será refletida nos gráficos depois de enviada.',
 
         'status' => [
             'created'       => 'Criada em :date',
+            'viewed'        => 'Viewed',
             'send' => [
                 'draft'     => 'Não Enviada',
                 'sent'      => 'Enviada em :data',
@@ -62,11 +72,6 @@ return [
                 'await'     => 'Aguarda pagamento',
             ],
         ],
-    ],
-
-    'notification' => [
-        'message'           => 'Recebeu este e-mail porque tem uma próxima fatura com o valor de :amount para o cliente :customer.',
-        'button'            => 'Pagar agora',
     ],
 
 ];

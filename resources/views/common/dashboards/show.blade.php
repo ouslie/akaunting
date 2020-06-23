@@ -10,7 +10,7 @@
                     <i class="fa fa-ellipsis-v"></i>
                 </a>
 
-                <div class="dropdown-menu dropdown-menu-left dropdown-menu-arrow">
+                <div class="dropdown-menu dropdown-menu-sm-right dropdown-menu-xs-right dropdown-menu-arrow">
                     @permission('create-common-widgets')
                         {!! Form::button(trans('general.title.add', ['type' => trans_choice('general.widgets', 1)]), [
                             'type'    => 'button',
@@ -46,8 +46,8 @@
 
         $placeholder = json_encode([
             'name' => trans('general.form.enter', ['field' => trans('general.name')]),
-            'type' => trans('general.form.enter', ['field' => trans_choice('general.types', 1)]),
-            'width' => trans('general.form.enter', ['field' => trans('general.width')]),
+            'type' => trans('general.form.select.field', ['field' => trans_choice('general.types', 1)]),
+            'width' => trans('general.form.select.field', ['field' => trans('general.width')]),
             'sort' => trans('general.form.enter', ['field' => trans('general.sprt')])
         ]);
     @endphp
@@ -80,7 +80,7 @@
         :format="'yyyy-MM-dd'"
         value-format="yyyy-MM-dd"
         @change="onChangeFilterDate"
-        range-separator="{{ trans('general.to')}}"
+        range-separator=">>"
         start-placeholder="{{ trans('general.start_date')}}"
         end-placeholder="{{ trans('general.end_date')}}"
         :picker-options="{

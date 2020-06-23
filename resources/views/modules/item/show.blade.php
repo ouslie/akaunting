@@ -108,21 +108,76 @@
                          @endif
 
                          <div class="tab-pane fade" id="review">
-                            <div id="reviews" class="clearfix" v-html="reviews">
-                                @if(!$module->reviews)
-                                    <div class="text-center">
-                                        <strong>
-                                            {{ trans('modules.reviews.na') }}
-                                        </strong>
-                                    </div>
-                                @endif
+                            @php 
+                                $reviews = $module->app_reviews;
+                            @endphp
+
+                            <div id="reviews" class="clearfix" v-if="reviews.status" v-html="reviews.html"></div>
+
+                            <div id="reviews" class="clearfix" v-else>
+                                @include('partials.modules.reviews')
                             </div>
 
-                            <div class="card-footer mx--4 mt-4 mb--4">
+                            @php
+                                $review_first_item = count($reviews->data) > 0 ? ($reviews->current_page - 1) * $reviews->per_page + 1 : null;
+                                $review_last_item = count($reviews->data) > 0 ? $review_first_item + count($reviews->data) - 1 : null;
+                            @endphp
+
+                            @if (!empty($review_first_item))
+                                @stack('pagination_start')
+
+                                <div class="row mt-4">
+                                    <div class="col-md-6">
+                                        <span class="table-text d-lg-block">
+                                            {{ trans('pagination.showing', ['first' => $review_first_item, 'last' => $review_last_item, 'total' => $reviews->total, 'type' => strtolower(trans('modules.tab.reviews'))]) }}
+                                        </span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <ul class="pagination float-right">
+                                            {{-- Previous Page Link --}}
+                                            <li class="page-item disabled" v-if="reviews.pagination.current_page == 1">
+                                                <span class="page-link">&laquo;</span>
+                                            </li>
+                                            <li class="page-item" v-else>
+                                                <button type="button" class="page-link" @click="onReviews(reviews.pagination.current_page - 1)" rel="prev">&laquo;</button>
+                                            </li>
+
+                                            {{-- Pagination Elements --}}
+                                            @for ($page = 1; $page <= $reviews->last_page; $page++)
+                                                <li class="page-item" :class="[{'active': reviews.pagination.current_page == {{ $page }}}]" v-if="reviews.pagination.current_page == {{ $page }}">
+                                                    <span class="page-link">{{ $page }}</span>
+                                                </li>
+                                                <li class="page-item" v-else>
+                                                    <button type="button" class="page-link" @click="onReviews({{ $page }})" data-page="{{ $page }}">{{ $page }}</button>
+                                                </li>
+                                            @endfor
+
+                                            {{-- Next Page Link --}}
+                                            <li class="page-item" v-if="reviews.pagination.last_page != reviews.pagination.current_page">
+                                                <button type="button" class="page-link" @click="onReviews(reviews.pagination.current_page + 1)" rel="next">&raquo;</button>
+                                            </li>
+                                            <li class="page-item disabled" v-else>
+                                                <span class="page-link">&raquo;</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                @stack('pagination_end')
+                            @else
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <small>{{ trans('general.no_records') }}</small>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="card-footer mx--4 mb--4">
                                 <div class="row">
                                     <div class="col-md-12 text-right">
                                         @if (!empty($module->review_action))
-                                            <a href="{{ $module->review_action }}" class="btn btn-success" target="_blank">
+                                            <a href="{{ $module->review_action }}" class="btn btn-success header-button-top" target="_blank">
                                                 {{ trans('modules.reviews.button.add') }}
                                             </a>
                                         @endif
@@ -164,14 +219,14 @@
                 <div class="card-footer">
                     @if ($installed)
                         @permission('delete-modules-item')
-                            <a href="{{ url('apps/' . $module->slug . '/uninstall') }}" class="btn btn-block btn-danger">{{ trans('modules.button.uninstall') }}</a>
+                            <a href="{{ route('apps.app.uninstall', $module->slug) }}" class="btn btn-block btn-danger">{{ trans('modules.button.uninstall') }}</a>
                         @endpermission
 
                         @permission('update-modules-item')
                             @if ($enable)
-                                <a href="{{ url('apps/' . $module->slug . '/disable') }}" class="btn btn-block btn-warning">{{ trans('modules.button.disable') }}</a>
+                                <a href="{{ route('apps.app.disable', $module->slug) }}" class="btn btn-block btn-warning">{{ trans('modules.button.disable') }}</a>
                             @else
-                                <a href="{{ url('apps/' . $module->slug . '/enable') }}" class="btn btn-block btn-success">{{ trans('modules.button.enable') }}</a>
+                                <a href="{{ route('apps.app.enable', $module->slug) }}" class="btn btn-block btn-success">{{ trans('modules.button.enable') }}</a>
                             @endif
                         @endpermission
                     @else
@@ -188,10 +243,10 @@
                         @endpermission
                     @endif
 
-                    @if ($module->purchase_faq)
-                         <div class="text-center mt-3">
-                             <a href="#" @click="onShowFaq" id="button-purchase-faq">{{ trans('modules.tab.faq')}}</a>
-                         </div>
+                    @if (!empty($module->purchase_desc))
+                        <div class="text-center mt-3">
+                            {!! $module->purchase_desc !!}
+                        </div>
                     @endif
                 </div>
             </div>
@@ -204,7 +259,7 @@
                         @if ($module->vendor_name)
                             <tr class="row">
                                 <th class="col-5">{{ trans_choice('general.developers', 1) }}</th>
-                                <td class="col-7 text-right"><a href="{{ url('apps/vendors/' . $module->vendor->slug) }}">{{ $module->vendor_name }}</a></td>
+                                <td class="col-7 text-right"><a href="{{ route('apps.vendors.show', $module->vendor->slug) }}">{{ $module->vendor_name }}</a></td>
                             </tr>
                         @endif
                         @if ($module->version)
@@ -225,23 +280,17 @@
                                 <td class="col-7 text-right">{{ Date::parse($module->updated_at)->diffForHumans() }}</td>
                             </tr>
                         @endif
-                        @if ($module->compatibility)
-                            <tr class="row">
-                                <th class="col-5">{{ trans('modules.compatibility') }}</th>
-                                <td class="col-7 text-right">{{ $module->compatibility }}</td>
-                            </tr>
-                        @endif
                         @if ($module->category)
                             <tr class="row">
                                 <th class="col-5">{{ trans_choice('general.categories', 1) }}</th>
-                                <td class="col-7 text-right"><a href="{{ url('apps/categories/' . $module->category->slug) }}">{{ $module->category->name }}</a></td>
+                                <td class="col-7 text-right"><a href="{{ route('apps.categories.show', $module->category->slug) }}">{{ $module->category->name }}</a></td>
                             </tr>
                         @endif
                         <tr class="row">
                             <th class="col-5">{{ trans('modules.documentation') }}</th>
                             @if ($module->documentation)
                                 <td class="col-7 text-right">
-                                    <a href="{{ url('apps/docs/' . $module->slug) }}">{{ trans('modules.view') }}</a>
+                                    <a href="{{ route('apps.docs.show', $module->slug) }}">{{ trans('modules.view') }}</a>
                                 </td>
                             @else
                                <th class="col-7 text-right">{{ trans('general.na') }}</th>
@@ -254,7 +303,7 @@
     </div>
 
     @if ($module->purchase_faq)
-        <akaunting-modal :show="faq">
+        <akaunting-modal :show="faq" modal-dialog-class="modal-md">
             <template #modal-content>
                 {!! $module->purchase_faq !!}
             </template>
@@ -263,13 +312,13 @@
 
     @if ($module->install)
         <akaunting-modal :show="installation.show"
-        :title="'{{ trans('modules.installation.header') }}'"
+        title="{{ trans('modules.installation.header') }}"
         @cancel="installation.show = false">
             <template #modal-body>
                 <div class="modal-body">
                     <el-progress :text-inside="true" :stroke-width="24" :percentage="installation.total" :status="installation.status"></el-progress>
 
-                    <div id="progress-text" v-html="installation.html"></div>
+                    <div id="progress-text" class="mt-3" v-html="installation.html"></div>
                 </div>
             </template>
             <template #card-footer>

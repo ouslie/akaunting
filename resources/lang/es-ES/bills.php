@@ -13,6 +13,7 @@ return [
     'price'                 => 'Precio',
     'sub_total'             => 'Subtotal',
     'discount'              => 'Descuento',
+    'item_discount'         => 'Descuento de línea',
     'tax_total'             => 'Total Impuestos',
     'total'                 => 'Total ',
 
@@ -28,22 +29,29 @@ return [
     'histories'             => 'Historial',
     'payments'              => 'Pagos',
     'add_payment'           => 'Añadir pago',
+    'mark_paid'             => 'Marcar Como Pagada',
     'mark_received'         => 'Marcar como recibido',
+    'mark_cancelled'        => 'Marcar como Cancelado',
     'download_pdf'          => 'Descargar PDF',
     'send_mail'             => 'Enviar Email',
     'create_bill'           => 'Crear Recibo',
     'receive_bill'          => 'Recibir factura',
     'make_payment'          => 'Pagar',
 
-    'status' => [
+    'statuses' => [
         'draft'             => 'Borrador',
         'received'          => 'Recibido',
         'partial'           => 'Parcial',
         'paid'              => 'Pagado',
+        'overdue'           => 'Vencido',
+        'unpaid'            => 'No Pagado',
+        'cancelled'         => 'Cancelado',
     ],
 
     'messages' => [
-        'received'          => 'Recibo marcado como recibido con éxito!',
+        'marked_received'   => '¡Recibo marcado como recibido!',
+        'marked_paid'       => '¡Recibo marcado como pagado!',
+        'marked_cancelled'  => '¡Recibo marcado como cancelado!',
         'draft'             => 'Este es un<b>BORRADOR</b> de factura y se reflejará en los gráficos luego de que sea enviada.',
 
         'status' => [

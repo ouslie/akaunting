@@ -15,6 +15,7 @@ class Install extends Command
     const OPT_DB_NAME = 'db-name';
     const OPT_DB_USERNAME = 'db-username';
     const OPT_DB_PASSWORD = 'db-password';
+    const OPT_DB_PREFIX = 'db-prefix';
     const OPT_COMPANY_NAME = 'company-name';
     const OPT_COMPANY_EMAIL = 'company-email';
     const OPT_ADMIN_EMAIL = 'admin-email';
@@ -27,12 +28,13 @@ class Install extends Command
      *
      * @var string
      */
-    protected $signature = 'install 
+    protected $signature = 'install
                             {--db-host=localhost : Database host}
                             {--db-port=3306 : Port of the database host}
                             {--db-name= : Name of the database}
                             {--db-username=root : Username to use to access the database}
                             {--db-password= : Password to use to access the database}
+                            {--db-prefix= : Table name prefix}
                             {--company-name=My Company : Name of the company}
                             {--company-email=my@company.com : Email of the company}
                             {--admin-email= : Admin user email}
@@ -55,7 +57,7 @@ class Install extends Command
     public function handle()
     {
         if (($missing_options = $this->getMissingOptions()) && $this->option(self::OPT_NO_INTERACTION)) {
-            $this->line('❌ Some options are missing and --no-interaction is present. Please run the following command for more informations :');
+            $this->line('❌ Some options are missing and --no-interaction is present. Please run the following command for more information :');
             $this->line('❌ php artisan help install');
             $this->line('❌ Missing options are : ' . implode(', ', $missing_options));
 
@@ -64,6 +66,7 @@ class Install extends Command
 
         $this->line('Setting locale ' . $this->locale);
         Session::put(self::OPT_LOCALE, $this->locale);
+        app()->setLocale($this->locale);
 
         $this->prompt();
 
@@ -101,11 +104,14 @@ class Install extends Command
             'OPT_DB_NAME',
             'OPT_DB_USERNAME',
             'OPT_DB_PASSWORD',
+            'OPT_DB_PREFIX',
             'OPT_COMPANY_NAME',
             'OPT_COMPANY_EMAIL',
             'OPT_ADMIN_EMAIL',
-            'OPT_ADMIN_PASSWORD',
+            'OPT_ADMIN_PASSWORD'
         ];
+
+        $allowed_empty = ['db_password', 'db_prefix'];
 
         foreach ($contants as $const) {
             $option = constant("self::$const");
@@ -114,14 +120,15 @@ class Install extends Command
 
             $this->$property = $this->option($option);
 
-            if (empty($this->$property)) {
-                // Allow empty password
-                if ($property == 'db_password') {
-                    continue;
-                }
-
-                $missing_options[] = $option;
+            if (!empty($this->$property)) {
+                continue;
             }
+
+            if (in_array($property, $allowed_empty)) {
+                continue;
+            }
+
+            $missing_options[] = $option;
         }
 
         return $missing_options;
@@ -176,10 +183,11 @@ class Install extends Command
         $this->db_name     = $this->option(self::OPT_DB_NAME);
         $this->db_username = $this->option(self::OPT_DB_USERNAME);
         $this->db_password = $this->option(self::OPT_DB_PASSWORD);
+        $this->db_prefix   = $this->option(self::OPT_DB_PREFIX);
 
         $this->line('Connecting to database ' . $this->db_name . '@' . $this->db_host . ':' . $this->db_port);
 
-        if (!Installer::createDbTables($this->db_host, $this->db_port, $this->db_name, $this->db_username, $this->db_password)) {
+        if (!Installer::createDbTables($this->db_host, $this->db_port, $this->db_name, $this->db_username, $this->db_password, $this->db_prefix)) {
             $this->error('Error: Could not connect to the database! Please, make sure the details are correct.');
 
             return false;

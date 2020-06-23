@@ -5,7 +5,8 @@ namespace App\Utilities;
 use App\Traits\SiteApi;
 use Cache;
 use Date;
-use Parsedown;
+use GrahamCampbell\Markdown\Facades\Markdown;
+use Illuminate\Support\Arr;
 
 class Versions
 {
@@ -25,8 +26,6 @@ class Versions
             return $output;
         }
 
-        $parsedown = new Parsedown();
-
         $releases = json_decode($json);
 
         foreach ($releases as $release) {
@@ -44,7 +43,7 @@ class Versions
 
             $output .= '<h2><span class="badge badge-pill badge-success">' . $release->tag_name . '</span></h2>';
 
-            $output .= $parsedown->text($release->body);
+            $output .= Markdown::convertToHtml($release->body);
 
             $output .= '<hr>';
         }
@@ -52,7 +51,18 @@ class Versions
         return $output;
     }
 
-    public static function latest($modules = [])
+    public static function latest($alias)
+    {
+        $versions = static::all($alias);
+
+        if (empty($versions[$alias]) || empty($versions[$alias]->data)) {
+            return false;
+        }
+
+        return $versions[$alias]->data->latest;
+    }
+
+    public static function all($modules = null)
     {
         // Get data from cache
         $versions = Cache::get('versions');
@@ -70,8 +80,18 @@ class Versions
 
         $versions['core'] = static::getLatestVersion($url, $info['akaunting']);
 
+        $modules = Arr::wrap($modules);
+
         // Then modules
         foreach ($modules as $module) {
+            if (is_string($module)) {
+                $module = module($module);
+            }
+
+            if (!$module instanceof \Akaunting\Module\Module) {
+                continue;
+            }
+
             $alias = $module->get('alias');
             $version = $module->get('version');
 
@@ -85,7 +105,7 @@ class Versions
         return $versions;
     }
 
-    public static function getLatestVersion($url, $latest)
+    protected static function getLatestVersion($url, $latest)
     {
         if (!$data = static::getResponseData('GET', $url, ['timeout' => 10])) {
             return $latest;
